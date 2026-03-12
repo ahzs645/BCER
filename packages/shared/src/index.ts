@@ -213,6 +213,20 @@ export interface AggregateProductionData {
   fiscalYearProduction: AggregateProductionPoint[];
 }
 
+export interface ProductionExplorerWell {
+  operatorId: number | null;
+  operator: string | null;
+  areaDesc: string | null;
+  formDesc: string | null;
+  orientation: string | null;
+  production: (number | null)[];
+}
+
+export interface ProductionExplorerData {
+  fiscalYears: number[];
+  wells: ProductionExplorerWell[];
+}
+
 export interface WellDetail {
   overview: OverviewRecord;
   activityLocations: ActivityLocationRow[];

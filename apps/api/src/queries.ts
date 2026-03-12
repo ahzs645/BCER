@@ -10,6 +10,8 @@ import type {
   OperatorDetailData,
   OperatorSummary,
   OverviewRecord,
+  ProductionExplorerData,
+  ProductionExplorerWell,
   SearchResponse,
   SourceMeta,
   SortOption,
