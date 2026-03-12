@@ -6,6 +6,7 @@ import {
   getSourceMeta,
   getDashboardData,
   getAggregateProduction,
+  getProductionExplorer,
   getOperatorAnalytics,
   getOperatorDetail,
   getWellDetail,
@@ -74,6 +75,10 @@ function main() {
   // --- Aggregate Production ---
   console.log("\nAggregate Production:");
   writeJson("aggregate-production.json", getAggregateProduction(db));
+
+  // --- Production Explorer ---
+  console.log("\nProduction Explorer:");
+  writeJson("production-explorer.json", getProductionExplorer(db));
 
   // --- Operators ---
   console.log("\nOperators:");

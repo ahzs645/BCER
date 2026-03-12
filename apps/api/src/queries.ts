@@ -994,6 +994,44 @@ export function getOperatorDetail(db: DatabaseSync, operatorId: number): Operato
   return { summary, wells, areaBreakdown, formationBreakdown, orientationBreakdown };
 }
 
+export function getProductionExplorer(db: DatabaseSync): ProductionExplorerData {
+  // Discover fiscal year columns
+  const sampleRow = queryRow(db, "SELECT * FROM prd_profile_gas LIMIT 1", {});
+  const fyeColumns = sampleRow
+    ? Object.keys(sampleRow).filter((k) => /^prd_fye\d{4}$/.test(k)).sort()
+    : [];
+
+  const fiscalYears = fyeColumns.map((c) => Number(c.match(/\d{4}/)![0]));
+
+  if (fyeColumns.length === 0) {
+    return { fiscalYears: [], wells: [] };
+  }
+
+  // Build SELECT with fiscal year columns
+  const fyeSelect = fyeColumns.map((c) => `p.${c}`).join(", ");
+
+  const rows = queryRows(
+    db,
+    `SELECT
+       w.operator_id, w.operator, w.area_desc, w.form_desc, w.orientation,
+       ${fyeSelect}
+     FROM prd_profile_gas p
+     JOIN well_search w ON w.wa_num = p.wa_num`,
+    {},
+  );
+
+  const wells: ProductionExplorerWell[] = rows.map((row) => ({
+    operatorId: toNumber(row.operator_id),
+    operator: toStringValue(row.operator),
+    areaDesc: toStringValue(row.area_desc),
+    formDesc: toStringValue(row.form_desc),
+    orientation: normalizeOrientation(row.orientation),
+    production: fyeColumns.map((col) => toNumber(row[col])),
+  }));
+
+  return { fiscalYears, wells };
+}
+
 export function getWellDetail(db: DatabaseSync, waNum: number): WellDetail | null {
   const overviewRow = queryRow(db, "SELECT * FROM well_search WHERE wa_num = :waNum", { waNum });
   if (!overviewRow) {

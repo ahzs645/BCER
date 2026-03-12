@@ -3,6 +3,7 @@ import type {
   DashboardData,
   OperatorAnalyticsData,
   OperatorDetailData,
+  ProductionExplorerData,
   SearchResponse,
   SourceMeta,
   WellDetail,
@@ -45,6 +46,10 @@ export async function fetchWellDetail(waNum: string): Promise<WellDetail> {
   const detail = await loadWellDetail(Number(waNum));
   if (!detail) throw new Error(`Well ${waNum} not found`);
   return detail;
+}
+
+export function fetchProductionExplorer(): Promise<ProductionExplorerData> {
+  return loadJson<ProductionExplorerData>("production-explorer.json");
 }
 
 export function fetchOperatorAnalytics(): Promise<OperatorAnalyticsData> {

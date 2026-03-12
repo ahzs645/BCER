@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { fetchDashboard, fetchAggregateProduction } from "@/lib/api";
 import { formatNumber } from "@/lib/format";
 import { useChartTheme } from "@/lib/chart-theme";
+import { ProductionExplorer } from "@/components/dashboard/ProductionExplorer";
 import type { AggregateProductionData, DashboardData } from "@/types";
 
 const DONUT_COLORS = ["#10b981", "#0ea5e9"];
@@ -303,6 +304,9 @@ export function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Production Explorer with Filters */}
+      <ProductionExplorer />
 
       {/* Area / Formation Charts */}
       <div className="grid gap-4 md:grid-cols-2">
