@@ -1,0 +1,88 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap");
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: hsl(222 20% 8%);
+  --color-foreground: hsl(210 20% 90%);
+  --color-card: hsl(220 18% 12%);
+  --color-card-foreground: hsl(210 20% 90%);
+  --color-popover: hsl(220 18% 12%);
+  --color-popover-foreground: hsl(210 20% 90%);
+  --color-primary: hsl(190 85% 50%);
+  --color-primary-foreground: hsl(222 20% 8%);
+  --color-secondary: hsl(220 16% 16%);
+  --color-secondary-foreground: hsl(210 20% 90%);
+  --color-muted: hsl(220 14% 18%);
+  --color-muted-foreground: hsl(215 15% 55%);
+  --color-accent: hsl(195 80% 45%);
+  --color-accent-foreground: hsl(210 20% 90%);
+  --color-destructive: hsl(0 72% 55%);
+  --color-destructive-foreground: hsl(210 20% 90%);
+  --color-border: hsl(220 15% 20%);
+  --color-input: hsl(220 15% 20%);
+  --color-ring: hsl(190 85% 50%);
+  --color-sidebar: hsl(222 22% 7%);
+  --color-sidebar-foreground: hsl(210 20% 90%);
+  --color-sidebar-primary: hsl(190 85% 50%);
+  --color-sidebar-primary-foreground: hsl(222 20% 8%);
+  --color-sidebar-accent: hsl(220 16% 16%);
+  --color-sidebar-accent-foreground: hsl(210 20% 90%);
+  --color-sidebar-border: hsl(220 15% 15%);
+  --color-sidebar-ring: hsl(190 85% 50%);
+
+  --color-chart-1: #10b981;
+  --color-chart-2: #f59e0b;
+  --color-chart-3: #0ea5e9;
+  --color-chart-4: #ef4444;
+  --color-chart-5: #06b6d4;
+  --color-chart-6: #eab308;
+
+  --radius: 0.625rem;
+  --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-heading: "Space Grotesk", "IBM Plex Sans", system-ui, sans-serif;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    border-color: var(--color-border);
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: var(--font-sans);
+    color: var(--color-foreground);
+    background: var(--color-background);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@custom-variant dark (&:is(.dark *));
+
+/* Glow utilities */
+@utility glow-card {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.08), 0 0 40px rgba(6, 182, 212, 0.04);
+}
+
+@utility glow-card-strong {
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.12), 0 0 60px rgba(6, 182, 212, 0.06);
+}
+
+@utility glow-primary {
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.15), 0 0 40px rgba(14, 165, 233, 0.08);
+}
+
+/* Strip MapLibre popup chrome so our React portal controls the look */
+.bcer-map-popup .maplibregl-popup-content {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+}
+
+.bcer-map-popup .maplibregl-popup-tip {
+  border-top-color: hsl(220 18% 12%);
+}
+

@@ -1,0 +1,23 @@
+{
+  "name": "bcer-data-viewer",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "import:data": "python3 scripts/import_bcer.py --xlsx ./View_BCER_Data_Most_Recent.xlsm --accdb ./DBS_BCER_Data_2024_09_SEP_10.accdb --db ./data/bcer.sqlite",
+    "dev:api": "npm --workspace @bcer/api run dev",
+    "dev:web": "npm --workspace @bcer/web run dev",
+    "dev": "concurrently -n api,web -c cyan,magenta \"npm run dev:api\" \"npm run dev:web\"",
+    "build:api": "npm --workspace @bcer/api run build",
+    "build:web": "npm --workspace @bcer/web run build",
+    "build": "npm run build:api && npm run build:web",
+    "test:api": "npm run build:api && NODE_OPTIONS=--disable-warning=ExperimentalWarning node --test --test-concurrency=1 tests/*.test.mjs",
+    "test:web": "npm --workspace @bcer/web run test -- --run",
+    "test": "npm run test:api && npm run test:web"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
