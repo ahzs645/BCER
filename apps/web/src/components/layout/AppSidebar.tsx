@@ -1,4 +1,4 @@
-import { LayoutDashboard, Search, MapPin, Info, Database } from "lucide-react";
+import { LayoutDashboard, Search, Building2, MapPin, Info, Database } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { fetchSourceMeta } from "@/lib/api";
@@ -19,6 +19,7 @@ import {
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/search", icon: Search, label: "Search" },
+  { to: "/operators", icon: Building2, label: "Operators" },
   { to: "/map", icon: MapPin, label: "Map" },
   { to: "/about", icon: Info, label: "About" },
 ] as const;

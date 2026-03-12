@@ -1,4 +1,4 @@
-import type { DashboardData, SearchResponse, SourceMeta, WellDetail } from "../types";
+import type { DashboardData, OperatorAnalyticsData, OperatorDetailData, SearchResponse, SourceMeta, WellDetail } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
@@ -37,4 +37,12 @@ export function fetchWellSearch(filters: Record<string, string | number | undefi
 
 export function fetchWellDetail(waNum: string) {
   return requestJson<WellDetail>(`/api/wells/${waNum}`);
+}
+
+export function fetchOperatorAnalytics() {
+  return requestJson<OperatorAnalyticsData>("/api/operators");
+}
+
+export function fetchOperatorDetail(operatorId: string) {
+  return requestJson<OperatorDetailData>(`/api/operators/${operatorId}`);
 }

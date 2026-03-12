@@ -26,6 +26,10 @@ function useBreadcrumbs() {
     return [{ label: "Dashboard", href: "/" }, { label: "Map" }];
   }
 
+  if (path === "/operators" || path.startsWith("/operators?")) {
+    return [{ label: "Dashboard", href: "/" }, { label: "Operators" }];
+  }
+
   if (path === "/about") {
     return [{ label: "Dashboard", href: "/" }, { label: "About" }];
   }

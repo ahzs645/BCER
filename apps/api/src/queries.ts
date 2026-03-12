@@ -5,6 +5,9 @@ import type {
   DashboardData,
   FiscalYearPoint,
   GasAnalysisRow,
+  OperatorAnalyticsData,
+  OperatorDetailData,
+  OperatorSummary,
   OverviewRecord,
   SearchResponse,
   SourceMeta,
@@ -779,6 +782,115 @@ export function getDashboardData(db: DatabaseSync): DashboardData {
     recentWells,
     productionLeaders,
   };
+}
+
+function mapOperatorSummary(row: RowRecord): OperatorSummary {
+  return {
+    operator: String(row.operator ?? ""),
+    operatorId: toNumber(row.operator_id) ?? 0,
+    operatorAbbr: toStringValue(row.operator_abbr),
+    wellCount: toNumber(row.well_count) ?? 0,
+    horizontalCount: toNumber(row.horizontal_count) ?? 0,
+    verticalCount: toNumber(row.vertical_count) ?? 0,
+    totalGas3Yr: toNumber(row.total_gas_3yr) ?? 0,
+    totalGas5Yr: toNumber(row.total_gas_5yr) ?? 0,
+    topArea: toStringValue(row.top_area),
+    topFormation: toStringValue(row.top_formation),
+  };
+}
+
+const OPERATOR_SUMMARY_SQL = `
+  SELECT
+    w.operator,
+    w.operator_id,
+    w.operator_abbr,
+    COUNT(*) AS well_count,
+    SUM(CASE WHEN UPPER(COALESCE(w.orientation, '')) = 'HZ' THEN 1 ELSE 0 END) AS horizontal_count,
+    SUM(CASE WHEN UPPER(COALESCE(w.orientation, '')) <> 'HZ' THEN 1 ELSE 0 END) AS vertical_count,
+    COALESCE(SUM(w.gas_prod_3yr), 0) AS total_gas_3yr,
+    COALESCE(SUM(w.gas_prod_5yr), 0) AS total_gas_5yr,
+    (SELECT area_desc FROM well_search w2
+     WHERE w2.operator_id = w.operator_id AND w2.area_desc IS NOT NULL
+     GROUP BY area_desc ORDER BY COUNT(*) DESC LIMIT 1) AS top_area,
+    (SELECT form_desc FROM well_search w2
+     WHERE w2.operator_id = w.operator_id AND w2.form_desc IS NOT NULL
+     GROUP BY form_desc ORDER BY COUNT(*) DESC LIMIT 1) AS top_formation
+  FROM well_search w
+  WHERE w.operator IS NOT NULL
+  GROUP BY w.operator_id, w.operator, w.operator_abbr
+`;
+
+export function getOperatorAnalytics(db: DatabaseSync): OperatorAnalyticsData {
+  const totalRow = queryRow(
+    db,
+    "SELECT COUNT(DISTINCT operator_id) AS total FROM well_search WHERE operator IS NOT NULL",
+    {},
+  );
+  const totalOperators = toNumber(totalRow?.total) ?? 0;
+
+  const topByWellCount = queryRows(
+    db,
+    `${OPERATOR_SUMMARY_SQL} ORDER BY well_count DESC LIMIT 25`,
+    {},
+  ).map(mapOperatorSummary);
+
+  const topByProduction = queryRows(
+    db,
+    `${OPERATOR_SUMMARY_SQL} ORDER BY total_gas_3yr DESC LIMIT 25`,
+    {},
+  ).map(mapOperatorSummary);
+
+  return { totalOperators, topByWellCount, topByProduction };
+}
+
+export function getOperatorDetail(db: DatabaseSync, operatorId: number): OperatorDetailData | null {
+  const summaryRow = queryRow(
+    db,
+    `${OPERATOR_SUMMARY_SQL} HAVING w.operator_id = :operatorId`,
+    { operatorId },
+  );
+
+  if (!summaryRow) return null;
+
+  const summary = mapOperatorSummary(summaryRow);
+
+  const wells = queryRows(
+    db,
+    "SELECT * FROM well_search WHERE operator_id = :operatorId ORDER BY gas_prod_3yr DESC",
+    { operatorId },
+  ).map(mapSearchResult);
+
+  const areaBreakdown = queryRows(
+    db,
+    `SELECT area_desc, COUNT(*) AS count
+     FROM well_search
+     WHERE operator_id = :operatorId AND area_desc IS NOT NULL
+     GROUP BY area_desc ORDER BY count DESC LIMIT 10`,
+    { operatorId },
+  ).map((r) => ({ areaDesc: String(r.area_desc), count: toNumber(r.count) ?? 0 }));
+
+  const formationBreakdown = queryRows(
+    db,
+    `SELECT form_desc, COUNT(*) AS count
+     FROM well_search
+     WHERE operator_id = :operatorId AND form_desc IS NOT NULL
+     GROUP BY form_desc ORDER BY count DESC LIMIT 10`,
+    { operatorId },
+  ).map((r) => ({ formDesc: String(r.form_desc), count: toNumber(r.count) ?? 0 }));
+
+  const orientationBreakdown = queryRows(
+    db,
+    `SELECT
+       CASE WHEN UPPER(COALESCE(orientation, '')) = 'HZ' THEN 'Horizontal' ELSE 'Vertical' END AS orientation,
+       COUNT(*) AS count
+     FROM well_search
+     WHERE operator_id = :operatorId
+     GROUP BY 1
+     ORDER BY count DESC`,
+    { operatorId },
+  ).map((r) => ({ orientation: String(r.orientation), count: toNumber(r.count) ?? 0 }));
+
+  return { summary, wells, areaBreakdown, formationBreakdown, orientationBreakdown };
 }
 
 export function getWellDetail(db: DatabaseSync, waNum: number): WellDetail | null {

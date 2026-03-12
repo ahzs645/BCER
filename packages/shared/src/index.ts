@@ -171,6 +171,33 @@ export interface DashboardData {
   productionLeaders: WellSearchResult[];
 }
 
+export interface OperatorSummary {
+  operator: string;
+  operatorId: number;
+  operatorAbbr: string | null;
+  wellCount: number;
+  horizontalCount: number;
+  verticalCount: number;
+  totalGas3Yr: number;
+  totalGas5Yr: number;
+  topArea: string | null;
+  topFormation: string | null;
+}
+
+export interface OperatorAnalyticsData {
+  totalOperators: number;
+  topByWellCount: OperatorSummary[];
+  topByProduction: OperatorSummary[];
+}
+
+export interface OperatorDetailData {
+  summary: OperatorSummary;
+  wells: WellSearchResult[];
+  areaBreakdown: Array<{ areaDesc: string; count: number }>;
+  formationBreakdown: Array<{ formDesc: string; count: number }>;
+  orientationBreakdown: Array<{ orientation: string; count: number }>;
+}
+
 export interface WellDetail {
   overview: OverviewRecord;
   activityLocations: ActivityLocationRow[];

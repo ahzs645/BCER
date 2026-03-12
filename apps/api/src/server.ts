@@ -2,7 +2,7 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { fileURLToPath } from "node:url";
 import { openDatabase } from "./database.js";
-import { getDashboardData, getSourceMeta, getWellDetail, getWellGeoJson, searchWells } from "./queries.js";
+import { getDashboardData, getOperatorAnalytics, getOperatorDetail, getSourceMeta, getWellDetail, getWellGeoJson, searchWells } from "./queries.js";
 
 interface AppOptions {
   dbPath?: string;
@@ -32,6 +32,26 @@ export async function createApp(options: AppOptions = {}) {
 
   app.get("/api/wells/geo", async () => {
     return getWellGeoJson(db);
+  });
+
+  app.get("/api/operators", async () => {
+    return getOperatorAnalytics(db);
+  });
+
+  app.get("/api/operators/:operatorId", async (request, reply) => {
+    const operatorId = Number.parseInt((request.params as { operatorId: string }).operatorId, 10);
+    if (Number.isNaN(operatorId)) {
+      reply.code(400);
+      return { message: "Invalid operator ID." };
+    }
+
+    const detail = getOperatorDetail(db, operatorId);
+    if (!detail) {
+      reply.code(404);
+      return { message: "Operator not found." };
+    }
+
+    return detail;
   });
 
   app.get("/api/wells", async (request) => {
