@@ -27,18 +27,12 @@ import { Database, Activity, Layers, TrendingUp, Search, ArrowRight } from "luci
 import { Button } from "@/components/ui/button";
 import { fetchDashboard } from "@/lib/api";
 import { formatNumber } from "@/lib/format";
+import { tooltipStyle, axisTickStyle, gridStroke } from "@/lib/chart-theme";
 import type { DashboardData } from "@/types";
 
 const DONUT_COLORS = ["#10b981", "#0ea5e9"];
 const BAR_COLOR = "#06b6d4";
 const BAR_COLOR_ALT = "#10b981";
-
-const tooltipStyle = {
-  backgroundColor: "hsl(220 18% 12%)",
-  border: "1px solid hsl(220 15% 20%)",
-  borderRadius: "0.5rem",
-  color: "hsl(210 20% 90%)",
-};
 
 export function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -154,13 +148,13 @@ export function DashboardPage() {
           <CardContent className="pt-0">
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={data.topAreas} layout="vertical" margin={{ left: 10, right: 20, top: 5, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.1)" horizontal={false} />
-                <XAxis type="number" tick={{ fill: "hsl(215 15% 55%)", fontSize: 12 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />
+                <XAxis type="number" tick={{ ...axisTickStyle, fontSize: 12 }} />
                 <YAxis
                   dataKey="areaDesc"
                   type="category"
                   width={120}
-                  tick={{ fill: "hsl(215 15% 55%)", fontSize: 11 }}
+                  tick={axisTickStyle}
                 />
                 <RechartsTooltip contentStyle={tooltipStyle} />
                 <Bar dataKey="count" fill={BAR_COLOR} radius={[0, 4, 4, 0]} />
@@ -178,13 +172,13 @@ export function DashboardPage() {
           <CardContent className="pt-0">
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={data.topFormations} layout="vertical" margin={{ left: 10, right: 20, top: 5, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.1)" horizontal={false} />
-                <XAxis type="number" tick={{ fill: "hsl(215 15% 55%)", fontSize: 12 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />
+                <XAxis type="number" tick={{ ...axisTickStyle, fontSize: 12 }} />
                 <YAxis
                   dataKey="formDesc"
                   type="category"
                   width={120}
-                  tick={{ fill: "hsl(215 15% 55%)", fontSize: 11 }}
+                  tick={axisTickStyle}
                 />
                 <RechartsTooltip contentStyle={tooltipStyle} />
                 <Bar dataKey="count" fill={BAR_COLOR_ALT} radius={[0, 4, 4, 0]} />

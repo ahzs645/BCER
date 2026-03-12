@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import type { GasUnitOption, LiquidUnitOption, WellDetail } from "@/types";
 import { formatNumber } from "@/lib/format";
+import { tooltipStyle, axisTickStyle, gridStroke } from "@/lib/chart-theme";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ProductionChartsProps {
@@ -23,17 +24,6 @@ const unitLabel: Record<GasUnitOption, string> = {
   mcf: "MCF",
   kmcf: "000 MCF",
 };
-
-const tooltipStyle = {
-  backgroundColor: "hsl(220 18% 12%)",
-  border: "1px solid hsl(220 15% 20%)",
-  borderRadius: "0.5rem",
-  color: "hsl(210 20% 90%)",
-  fontSize: "0.8rem",
-};
-
-const axisTickStyle = { fill: "hsl(215 15% 55%)", fontSize: 11 };
-const gridStroke = "rgba(148,163,184,0.1)";
 
 function valueKey(prefix: "gasVolume" | "avgDaily", unit: GasUnitOption) {
   if (unit === "mcf") return `${prefix}Mcf`;

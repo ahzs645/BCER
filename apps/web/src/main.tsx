@@ -1,6 +1,7 @@
 import { StrictMode, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { ThemeProvider } from "./lib/theme";
 import { App } from "./App";
 import { DashboardPage } from "./pages/DashboardPage";
 import { AboutPage } from "./pages/AboutPage";
@@ -13,6 +14,7 @@ const MapPage = lazy(() => import("./pages/MapPage").then((m) => ({ default: m.M
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
+    <ThemeProvider>
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<App />}>
@@ -25,5 +27,6 @@ createRoot(document.getElementById("root")!).render(
         </Route>
       </Routes>
     </BrowserRouter>
+    </ThemeProvider>
   </StrictMode>,
 );

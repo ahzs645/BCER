@@ -27,18 +27,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Building2, ArrowLeft, Flame, Layers, TrendingUp } from "lucide-react";
 import { fetchOperatorAnalytics, fetchOperatorDetail } from "@/lib/api";
 import { formatNumber } from "@/lib/format";
+import { tooltipStyle, axisTickStyle, gridStroke } from "@/lib/chart-theme";
 import type { OperatorAnalyticsData, OperatorDetailData, OperatorSummary } from "@/types";
 
 const BAR_COLOR = "#06b6d4";
 const BAR_COLOR_ALT = "#10b981";
 const DONUT_COLORS = ["#10b981", "#0ea5e9"];
-
-const tooltipStyle = {
-  backgroundColor: "hsl(220 18% 12%)",
-  border: "1px solid hsl(220 15% 20%)",
-  borderRadius: "0.5rem",
-  color: "hsl(210 20% 90%)",
-};
 
 function OperatorList({
   data,
@@ -138,13 +132,13 @@ function OperatorList({
         <CardContent className="pt-0">
           <ResponsiveContainer width="100%" height={400}>
             <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 20, top: 5, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.1)" horizontal={false} />
-              <XAxis type="number" tick={{ fill: "hsl(215 15% 55%)", fontSize: 12 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />
+              <XAxis type="number" tick={{ ...axisTickStyle, fontSize: 12 }} />
               <YAxis
                 dataKey="name"
                 type="category"
                 width={130}
-                tick={{ fill: "hsl(215 15% 55%)", fontSize: 11 }}
+                tick={axisTickStyle}
               />
               <RechartsTooltip contentStyle={tooltipStyle} />
               <Bar
@@ -394,13 +388,13 @@ function OperatorDetailView({
             <CardContent className="pt-0">
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={areaBreakdown} layout="vertical" margin={{ left: 10, right: 20, top: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.1)" horizontal={false} />
-                  <XAxis type="number" tick={{ fill: "hsl(215 15% 55%)", fontSize: 11 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />
+                  <XAxis type="number" tick={axisTickStyle} />
                   <YAxis
                     dataKey="areaDesc"
                     type="category"
                     width={100}
-                    tick={{ fill: "hsl(215 15% 55%)", fontSize: 10 }}
+                    tick={{ ...axisTickStyle, fontSize: 10 }}
                   />
                   <RechartsTooltip contentStyle={tooltipStyle} />
                   <Bar dataKey="count" fill={BAR_COLOR} radius={[0, 4, 4, 0]} />
@@ -421,13 +415,13 @@ function OperatorDetailView({
             <CardContent className="pt-0">
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={formationBreakdown} layout="vertical" margin={{ left: 10, right: 20, top: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.1)" horizontal={false} />
-                  <XAxis type="number" tick={{ fill: "hsl(215 15% 55%)", fontSize: 11 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />
+                  <XAxis type="number" tick={axisTickStyle} />
                   <YAxis
                     dataKey="formDesc"
                     type="category"
                     width={100}
-                    tick={{ fill: "hsl(215 15% 55%)", fontSize: 10 }}
+                    tick={{ ...axisTickStyle, fontSize: 10 }}
                   />
                   <RechartsTooltip contentStyle={tooltipStyle} />
                   <Bar dataKey="count" fill={BAR_COLOR_ALT} radius={[0, 4, 4, 0]} />

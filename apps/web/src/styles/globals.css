@@ -1,34 +1,109 @@
 @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap");
 @import "tailwindcss";
 
+/* ── Light mode (default) ───────────────────────────────── */
+:root {
+  --bg: hsl(0 0% 98%);
+  --fg: hsl(222 20% 12%);
+  --card-bg: hsl(0 0% 100%);
+  --card-fg: hsl(222 20% 12%);
+  --popover-bg: hsl(0 0% 100%);
+  --popover-fg: hsl(222 20% 12%);
+  --primary-bg: hsl(190 85% 42%);
+  --primary-fg: hsl(0 0% 100%);
+  --secondary-bg: hsl(220 14% 93%);
+  --secondary-fg: hsl(222 20% 12%);
+  --muted-bg: hsl(220 14% 95%);
+  --muted-fg: hsl(215 15% 45%);
+  --accent-bg: hsl(195 80% 92%);
+  --accent-fg: hsl(195 80% 30%);
+  --destructive-bg: hsl(0 72% 55%);
+  --destructive-fg: hsl(0 0% 100%);
+  --border-c: hsl(220 13% 87%);
+  --input-c: hsl(220 13% 87%);
+  --ring-c: hsl(190 85% 42%);
+  --sidebar-bg: hsl(220 16% 96%);
+  --sidebar-fg: hsl(222 20% 12%);
+  --sidebar-primary-bg: hsl(190 85% 42%);
+  --sidebar-primary-fg: hsl(0 0% 100%);
+  --sidebar-accent-bg: hsl(220 14% 90%);
+  --sidebar-accent-fg: hsl(222 20% 12%);
+  --sidebar-border-c: hsl(220 13% 89%);
+  --sidebar-ring-c: hsl(190 85% 42%);
+  --chart-tooltip-bg: hsl(0 0% 100%);
+  --chart-tooltip-border: hsl(220 13% 87%);
+  --chart-tooltip-fg: hsl(222 20% 12%);
+  --chart-axis-fg: hsl(215 15% 45%);
+  --chart-grid: rgba(148, 163, 184, 0.15);
+  --map-tip: hsl(0 0% 100%);
+}
+
+/* ── Dark mode ──────────────────────────────────────────── */
+.dark {
+  --bg: hsl(222 20% 8%);
+  --fg: hsl(210 20% 90%);
+  --card-bg: hsl(220 18% 12%);
+  --card-fg: hsl(210 20% 90%);
+  --popover-bg: hsl(220 18% 12%);
+  --popover-fg: hsl(210 20% 90%);
+  --primary-bg: hsl(190 85% 50%);
+  --primary-fg: hsl(222 20% 8%);
+  --secondary-bg: hsl(220 16% 16%);
+  --secondary-fg: hsl(210 20% 90%);
+  --muted-bg: hsl(220 14% 18%);
+  --muted-fg: hsl(215 15% 55%);
+  --accent-bg: hsl(195 80% 45%);
+  --accent-fg: hsl(210 20% 90%);
+  --destructive-bg: hsl(0 72% 55%);
+  --destructive-fg: hsl(210 20% 90%);
+  --border-c: hsl(220 15% 20%);
+  --input-c: hsl(220 15% 20%);
+  --ring-c: hsl(190 85% 50%);
+  --sidebar-bg: hsl(222 22% 7%);
+  --sidebar-fg: hsl(210 20% 90%);
+  --sidebar-primary-bg: hsl(190 85% 50%);
+  --sidebar-primary-fg: hsl(222 20% 8%);
+  --sidebar-accent-bg: hsl(220 16% 16%);
+  --sidebar-accent-fg: hsl(210 20% 90%);
+  --sidebar-border-c: hsl(220 15% 15%);
+  --sidebar-ring-c: hsl(190 85% 50%);
+  --chart-tooltip-bg: hsl(220 18% 12%);
+  --chart-tooltip-border: hsl(220 15% 20%);
+  --chart-tooltip-fg: hsl(210 20% 90%);
+  --chart-axis-fg: hsl(215 15% 55%);
+  --chart-grid: rgba(148, 163, 184, 0.1);
+  --map-tip: hsl(220 18% 12%);
+}
+
+/* ── Tailwind v4 theme tokens ───────────────────────────── */
 @theme inline {
-  --color-background: hsl(222 20% 8%);
-  --color-foreground: hsl(210 20% 90%);
-  --color-card: hsl(220 18% 12%);
-  --color-card-foreground: hsl(210 20% 90%);
-  --color-popover: hsl(220 18% 12%);
-  --color-popover-foreground: hsl(210 20% 90%);
-  --color-primary: hsl(190 85% 50%);
-  --color-primary-foreground: hsl(222 20% 8%);
-  --color-secondary: hsl(220 16% 16%);
-  --color-secondary-foreground: hsl(210 20% 90%);
-  --color-muted: hsl(220 14% 18%);
-  --color-muted-foreground: hsl(215 15% 55%);
-  --color-accent: hsl(195 80% 45%);
-  --color-accent-foreground: hsl(210 20% 90%);
-  --color-destructive: hsl(0 72% 55%);
-  --color-destructive-foreground: hsl(210 20% 90%);
-  --color-border: hsl(220 15% 20%);
-  --color-input: hsl(220 15% 20%);
-  --color-ring: hsl(190 85% 50%);
-  --color-sidebar: hsl(222 22% 7%);
-  --color-sidebar-foreground: hsl(210 20% 90%);
-  --color-sidebar-primary: hsl(190 85% 50%);
-  --color-sidebar-primary-foreground: hsl(222 20% 8%);
-  --color-sidebar-accent: hsl(220 16% 16%);
-  --color-sidebar-accent-foreground: hsl(210 20% 90%);
-  --color-sidebar-border: hsl(220 15% 15%);
-  --color-sidebar-ring: hsl(190 85% 50%);
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --color-card: var(--card-bg);
+  --color-card-foreground: var(--card-fg);
+  --color-popover: var(--popover-bg);
+  --color-popover-foreground: var(--popover-fg);
+  --color-primary: var(--primary-bg);
+  --color-primary-foreground: var(--primary-fg);
+  --color-secondary: var(--secondary-bg);
+  --color-secondary-foreground: var(--secondary-fg);
+  --color-muted: var(--muted-bg);
+  --color-muted-foreground: var(--muted-fg);
+  --color-accent: var(--accent-bg);
+  --color-accent-foreground: var(--accent-fg);
+  --color-destructive: var(--destructive-bg);
+  --color-destructive-foreground: var(--destructive-fg);
+  --color-border: var(--border-c);
+  --color-input: var(--input-c);
+  --color-ring: var(--ring-c);
+  --color-sidebar: var(--sidebar-bg);
+  --color-sidebar-foreground: var(--sidebar-fg);
+  --color-sidebar-primary: var(--sidebar-primary-bg);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-fg);
+  --color-sidebar-accent: var(--sidebar-accent-bg);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-fg);
+  --color-sidebar-border: var(--sidebar-border-c);
+  --color-sidebar-ring: var(--sidebar-ring-c);
 
   --color-chart-1: #10b981;
   --color-chart-2: #f59e0b;
@@ -61,16 +136,28 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Glow utilities */
+/* Glow utilities — subtle in light mode, visible in dark */
 @utility glow-card {
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.08), 0 0 40px rgba(6, 182, 212, 0.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 @utility glow-card-strong {
-  box-shadow: 0 0 30px rgba(16, 185, 129, 0.12), 0 0 60px rgba(6, 182, 212, 0.06);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 
 @utility glow-primary {
+  box-shadow: 0 1px 4px rgba(14, 165, 233, 0.08), 0 2px 6px rgba(14, 165, 233, 0.04);
+}
+
+.dark .glow-card {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.08), 0 0 40px rgba(6, 182, 212, 0.04);
+}
+
+.dark .glow-card-strong {
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.12), 0 0 60px rgba(6, 182, 212, 0.06);
+}
+
+.dark .glow-primary {
   box-shadow: 0 0 20px rgba(14, 165, 233, 0.15), 0 0 40px rgba(14, 165, 233, 0.08);
 }
 
@@ -83,6 +170,5 @@
 }
 
 .bcer-map-popup .maplibregl-popup-tip {
-  border-top-color: hsl(220 18% 12%);
+  border-top-color: var(--map-tip);
 }
-

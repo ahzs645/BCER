@@ -846,7 +846,24 @@ export function getOperatorAnalytics(db: DatabaseSync): OperatorAnalyticsData {
 export function getOperatorDetail(db: DatabaseSync, operatorId: number): OperatorDetailData | null {
   const summaryRow = queryRow(
     db,
-    `${OPERATOR_SUMMARY_SQL} HAVING w.operator_id = :operatorId`,
+    `SELECT
+       w.operator,
+       w.operator_id,
+       w.operator_abbr,
+       COUNT(*) AS well_count,
+       SUM(CASE WHEN UPPER(COALESCE(w.orientation, '')) = 'HZ' THEN 1 ELSE 0 END) AS horizontal_count,
+       SUM(CASE WHEN UPPER(COALESCE(w.orientation, '')) <> 'HZ' THEN 1 ELSE 0 END) AS vertical_count,
+       COALESCE(SUM(w.gas_prod_3yr), 0) AS total_gas_3yr,
+       COALESCE(SUM(w.gas_prod_5yr), 0) AS total_gas_5yr,
+       (SELECT area_desc FROM well_search
+        WHERE operator_id = :operatorId AND area_desc IS NOT NULL
+        GROUP BY area_desc ORDER BY COUNT(*) DESC LIMIT 1) AS top_area,
+       (SELECT form_desc FROM well_search
+        WHERE operator_id = :operatorId AND form_desc IS NOT NULL
+        GROUP BY form_desc ORDER BY COUNT(*) DESC LIMIT 1) AS top_formation
+     FROM well_search w
+     WHERE w.operator_id = :operatorId
+     GROUP BY w.operator_id`,
     { operatorId },
   );
 
