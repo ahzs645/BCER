@@ -12,6 +12,8 @@
     "dev": "concurrently -n api,web -c cyan,magenta \"npm run dev:api\" \"npm run dev:web\"",
     "build:api": "npm --workspace @bcer/api run build",
     "build:web": "npm --workspace @bcer/web run build",
+    "export:static": "NODE_OPTIONS=--disable-warning=ExperimentalWarning npx tsx apps/api/src/export-static.ts",
+    "build:static": "npm run export:static && npm run build:web",
     "build": "npm run build:api && npm run build:web",
     "test:api": "npm run build:api && NODE_OPTIONS=--disable-warning=ExperimentalWarning node --test --test-concurrency=1 tests/*.test.mjs",
     "test:web": "npm --workspace @bcer/web run test -- --run",

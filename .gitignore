@@ -8,3 +8,4 @@ __pycache__
 BCER_Data_Viewer_2024_09_SEP-19.pdf
 data/*.accdb
 data/test-bcer.sqlite
+apps/web/public/data/

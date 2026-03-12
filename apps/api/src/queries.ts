@@ -1,6 +1,7 @@
 import type { DatabaseSync } from "node:sqlite";
 import type {
   ActivityLocationRow,
+  AggregateProductionData,
   CalendarYearPoint,
   DashboardData,
   FiscalYearPoint,
@@ -782,6 +783,87 @@ export function getDashboardData(db: DatabaseSync): DashboardData {
     recentWells,
     productionLeaders,
   };
+}
+
+export function getAggregateProduction(db: DatabaseSync): AggregateProductionData {
+  // Metadata — well count and first-production date range
+  const metaRow = queryRow(
+    db,
+    `SELECT COUNT(*) AS cnt, MIN(first_prod_period) AS earliest, MAX(first_prod_period) AS latest
+     FROM prd_profile_gas WHERE first_prod_period IS NOT NULL`,
+    {},
+  );
+  const wellCount = toNumber(metaRow?.cnt) ?? 0;
+  const earliestFirstProd = toNumber(metaRow?.earliest);
+  const latestFirstProd = toNumber(metaRow?.latest);
+
+  // Monthly production (60 months) — SUM across all wells
+  const mprdCols = Array.from({ length: 60 }, (_, i) => {
+    const s = String(i + 1).padStart(3, "0");
+    return `COALESCE(SUM(mprd_${s}), 0) AS mprd_${s}`;
+  }).join(", ");
+  const mprdRow = queryRow(db, `SELECT ${mprdCols} FROM prd_profile_gas`, {});
+
+  // Monthly avg daily (60 months) — SUM across all activity rows
+  const madvCols = Array.from({ length: 60 }, (_, i) => {
+    const s = String(i + 1).padStart(3, "0");
+    return `COALESCE(SUM(madv_${s}), 0) AS madv_${s}`;
+  }).join(", ");
+  const madvRow = queryRow(db, `SELECT ${madvCols} FROM adv_profile_gas`, {});
+
+  // Calendar year production (20 years)
+  const yprdCols = Array.from({ length: 20 }, (_, i) => {
+    const s = String(i + 1).padStart(2, "0");
+    return `COALESCE(SUM(yprd_${s}), 0) AS yprd_${s}`;
+  }).join(", ");
+  const yprdRow = queryRow(db, `SELECT ${yprdCols} FROM prd_profile_gas`, {});
+
+  // Fiscal year production — discover columns from a sample row
+  const sampleRow = queryRow(db, "SELECT * FROM prd_profile_gas LIMIT 1", {});
+  const fyeColumns = sampleRow
+    ? Object.keys(sampleRow).filter((k) => /^prd_fye\d{4}$/.test(k)).sort()
+    : [];
+
+  let fiscalYearProduction: AggregateProductionData["fiscalYearProduction"] = [];
+  if (fyeColumns.length > 0) {
+    const fyeSumCols = fyeColumns.map((c) => `COALESCE(SUM(${c}), 0) AS ${c}`).join(", ");
+    const fyeRow = queryRow(db, `SELECT ${fyeSumCols} FROM prd_profile_gas`, {});
+    if (fyeRow) {
+      fiscalYearProduction = fyeColumns.map((col) => {
+        const year = Number(col.match(/\d{4}/)![0]);
+        return {
+          label: `${year - 1}/${String(year).slice(2)}`,
+          value: toNumber(fyeRow[col]) ?? 0,
+        };
+      });
+    }
+  }
+
+  const monthlyProduction = Array.from({ length: 60 }, (_, i) => {
+    const s = String(i + 1).padStart(3, "0");
+    return {
+      label: `M:${String(i + 1).padStart(2, "0")}`,
+      value: toNumber(mprdRow?.[`mprd_${s}`]) ?? 0,
+    };
+  });
+
+  const monthlyAvgDaily = Array.from({ length: 60 }, (_, i) => {
+    const s = String(i + 1).padStart(3, "0");
+    return {
+      label: `M:${String(i + 1).padStart(2, "0")}`,
+      value: toNumber(madvRow?.[`madv_${s}`]) ?? 0,
+    };
+  });
+
+  const calendarYearProduction = Array.from({ length: 20 }, (_, i) => {
+    const s = String(i + 1).padStart(2, "0");
+    return {
+      label: `Y:${s}`,
+      value: toNumber(yprdRow?.[`yprd_${s}`]) ?? 0,
+    };
+  });
+
+  return { wellCount, earliestFirstProd, latestFirstProd, monthlyProduction, monthlyAvgDaily, calendarYearProduction, fiscalYearProduction };
 }
 
 function mapOperatorSummary(row: RowRecord): OperatorSummary {

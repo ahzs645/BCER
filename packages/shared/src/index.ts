@@ -198,6 +198,21 @@ export interface OperatorDetailData {
   orientationBreakdown: Array<{ orientation: string; count: number }>;
 }
 
+export interface AggregateProductionPoint {
+  label: string;
+  value: number;
+}
+
+export interface AggregateProductionData {
+  wellCount: number;
+  earliestFirstProd: number | null;
+  latestFirstProd: number | null;
+  monthlyProduction: AggregateProductionPoint[];
+  monthlyAvgDaily: AggregateProductionPoint[];
+  calendarYearProduction: AggregateProductionPoint[];
+  fiscalYearProduction: AggregateProductionPoint[];
+}
+
 export interface WellDetail {
   overview: OverviewRecord;
   activityLocations: ActivityLocationRow[];

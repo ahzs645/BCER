@@ -1,5 +1,7 @@
 export type {
   ActivityLocationRow,
+  AggregateProductionData,
+  AggregateProductionPoint,
   CalendarYearPoint,
   DashboardData,
   FiscalYearPoint,
@@ -11,6 +13,7 @@ export type {
   OperatorDetailData,
   OperatorSummary,
   SearchResponse,
+  SortOption,
   SourceMeta,
   WellDetail,
   WellSearchFilters,

@@ -2,7 +2,7 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { fileURLToPath } from "node:url";
 import { openDatabase } from "./database.js";
-import { getDashboardData, getOperatorAnalytics, getOperatorDetail, getSourceMeta, getWellDetail, getWellGeoJson, searchWells } from "./queries.js";
+import { getAggregateProduction, getDashboardData, getOperatorAnalytics, getOperatorDetail, getSourceMeta, getWellDetail, getWellGeoJson, searchWells } from "./queries.js";
 
 interface AppOptions {
   dbPath?: string;
@@ -28,6 +28,10 @@ export async function createApp(options: AppOptions = {}) {
 
   app.get("/api/dashboard", async () => {
     return getDashboardData(db);
+  });
+
+  app.get("/api/dashboard/production", async () => {
+    return getAggregateProduction(db);
   });
 
   app.get("/api/wells/geo", async () => {

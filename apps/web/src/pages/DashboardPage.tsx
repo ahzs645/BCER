@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import {
   BarChart,
   Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -21,28 +23,50 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Database, Activity, Layers, TrendingUp, Search, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { fetchDashboard } from "@/lib/api";
+import { fetchDashboard, fetchAggregateProduction } from "@/lib/api";
 import { formatNumber } from "@/lib/format";
 import { useChartTheme } from "@/lib/chart-theme";
-import type { DashboardData } from "@/types";
+import type { AggregateProductionData, DashboardData } from "@/types";
 
 const DONUT_COLORS = ["#10b981", "#0ea5e9"];
 const BAR_COLOR = "#06b6d4";
 const BAR_COLOR_ALT = "#10b981";
+const LINE_COLOR_PROD = "#10b981";
+const LINE_COLOR_AVG = "#f59e0b";
+
+const GAS_M3_TO_MCF = 35.3147;
+
+function toMcf(val: number) {
+  return Number((val * GAS_M3_TO_MCF).toFixed(1));
+}
+
+function formatPeriod(period: number | null): string {
+  if (!period) return "—";
+  const year = Math.floor(period / 100);
+  const month = period % 100;
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${monthNames[month - 1] ?? "?"} ${year}`;
+}
 
 export function DashboardPage() {
   const { tooltipStyle, axisTickStyle, gridStroke } = useChartTheme();
   const [data, setData] = useState<DashboardData | null>(null);
+  const [prodData, setProdData] = useState<AggregateProductionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchDashboard()
-      .then(setData)
+    Promise.all([
+      fetchDashboard(),
+      fetchAggregateProduction(),
+    ])
+      .then(([dash, prod]) => {
+        setData(dash);
+        setProdData(prod);
+      })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load dashboard"))
       .finally(() => setLoading(false));
   }, []);
@@ -78,6 +102,26 @@ export function DashboardPage() {
     : "0";
 
   const topArea = data.topAreas[0];
+
+  // Convert production data to 000 MCF for display
+  const monthlyProd = prodData?.monthlyProduction.map((p, i) => ({
+    label: (i + 1) % 6 === 0 || i === 0 ? `${i + 1}` : "",
+    month: i + 1,
+    value: toMcf(p.value),
+  }));
+  const monthlyAvg = prodData?.monthlyAvgDaily.map((p, i) => ({
+    label: (i + 1) % 6 === 0 || i === 0 ? `${i + 1}` : "",
+    month: i + 1,
+    value: toMcf(p.value),
+  }));
+  const calYearProd = prodData?.calendarYearProduction.map((p, i) => ({
+    label: `Year ${i + 1}`,
+    value: toMcf(p.value),
+  }));
+  const fyProd = prodData?.fiscalYearProduction.map((p) => ({
+    label: p.label,
+    value: toMcf(p.value),
+  }));
 
   return (
     <div className="space-y-6">
@@ -138,7 +182,129 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      {/* Charts Row */}
+      {/* Aggregate Production Charts */}
+      {prodData && (
+        <div className="space-y-4">
+          <div className="rounded-lg bg-muted/30 px-4 py-2.5">
+            <p className="text-xs text-muted-foreground">
+              <span className="font-semibold text-foreground">{prodData.wellCount.toLocaleString()}</span> wells with production data,
+              first production ranging from{" "}
+              <span className="font-medium text-foreground">{formatPeriod(prodData.earliestFirstProd)}</span> to{" "}
+              <span className="font-medium text-foreground">{formatPeriod(prodData.latestFirstProd)}</span>.
+              Monthly charts show months relative to each well's first production date (Month 1 = first month of production).
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+          {/* Monthly Avg Daily Volume */}
+          <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+                  Avg Daily Volume of Gas Prodn - All Zones
+                </CardTitle>
+                <span className="text-[10px] text-muted-foreground">000 MCF</span>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={monthlyAvg} margin={{ left: 5, right: 10, top: 5, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                  <XAxis
+                    dataKey="month"
+                    type="number"
+                    domain={[1, 60]}
+                    ticks={[1, 6, 12, 18, 24, 30, 36, 42, 48, 54, 60]}
+                    tick={{ ...axisTickStyle, fontSize: 10 }}
+                    label={{ value: "Month from first production", position: "insideBottom", offset: -10, style: { ...axisTickStyle, fontSize: 9 } }}
+                  />
+                  <YAxis tick={axisTickStyle} tickFormatter={(v) => formatNumber(v, 0)} />
+                  <RechartsTooltip contentStyle={tooltipStyle} labelFormatter={(v) => `Month ${v}`} formatter={(v) => formatNumber(v as number, 1)} />
+                  <Line type="monotone" dataKey="value" stroke={LINE_COLOR_AVG} dot={false} strokeWidth={2} name="Avg Daily Volume" />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Monthly Gas Production */}
+          <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+                  Monthly Gas Production - All Zones
+                </CardTitle>
+                <span className="text-[10px] text-muted-foreground">000 MCF</span>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={monthlyProd} margin={{ left: 5, right: 10, top: 5, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                  <XAxis
+                    dataKey="month"
+                    type="number"
+                    domain={[1, 60]}
+                    ticks={[1, 6, 12, 18, 24, 30, 36, 42, 48, 54, 60]}
+                    tick={{ ...axisTickStyle, fontSize: 10 }}
+                    label={{ value: "Month from first production", position: "insideBottom", offset: -10, style: { ...axisTickStyle, fontSize: 9 } }}
+                  />
+                  <YAxis tick={axisTickStyle} tickFormatter={(v) => formatNumber(v, 0)} />
+                  <RechartsTooltip contentStyle={tooltipStyle} labelFormatter={(v) => `Month ${v}`} formatter={(v) => formatNumber(v as number, 1)} />
+                  <Line type="monotone" dataKey="value" stroke={LINE_COLOR_PROD} dot={false} strokeWidth={2} name="Monthly Production" />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Annual Gas Production (Calendar Year) */}
+          <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+                  Annual Gas Production - Calendar Year
+                </CardTitle>
+                <span className="text-[10px] text-muted-foreground">000 MCF</span>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={calYearProd} margin={{ left: 5, right: 10, top: 5, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                  <XAxis dataKey="label" tick={{ ...axisTickStyle, fontSize: 10 }} />
+                  <YAxis tick={axisTickStyle} tickFormatter={(v) => formatNumber(v, 0)} />
+                  <RechartsTooltip contentStyle={tooltipStyle} formatter={(v) => formatNumber(v as number, 1)} />
+                  <Bar dataKey="value" fill={BAR_COLOR} name="Annual Production" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Annual Gas Production (Fiscal Year) */}
+          <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+                  Annual Gas Production - Fiscal Year
+                </CardTitle>
+                <span className="text-[10px] text-muted-foreground">000 MCF</span>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={fyProd} margin={{ left: 5, right: 10, top: 5, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                  <XAxis dataKey="label" tick={{ ...axisTickStyle, fontSize: 10 }} angle={-45} textAnchor="end" height={50} />
+                  <YAxis tick={axisTickStyle} tickFormatter={(v) => formatNumber(v, 0)} />
+                  <RechartsTooltip contentStyle={tooltipStyle} formatter={(v) => formatNumber(v as number, 1)} />
+                  <Bar dataKey="value" fill="#0ea5e9" name="Annual Production" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Area / Formation Charts */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
           <CardHeader className="pb-2">
