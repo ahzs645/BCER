@@ -27,7 +27,7 @@ import { Database, Activity, Layers, TrendingUp, Search, ArrowRight } from "luci
 import { Button } from "@/components/ui/button";
 import { fetchDashboard } from "@/lib/api";
 import { formatNumber } from "@/lib/format";
-import { tooltipStyle, axisTickStyle, gridStroke } from "@/lib/chart-theme";
+import { useChartTheme } from "@/lib/chart-theme";
 import type { DashboardData } from "@/types";
 
 const DONUT_COLORS = ["#10b981", "#0ea5e9"];
@@ -35,6 +35,7 @@ const BAR_COLOR = "#06b6d4";
 const BAR_COLOR_ALT = "#10b981";
 
 export function DashboardPage() {
+  const { tooltipStyle, axisTickStyle, gridStroke } = useChartTheme();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

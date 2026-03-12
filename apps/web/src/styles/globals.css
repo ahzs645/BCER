@@ -30,11 +30,6 @@
   --sidebar-accent-fg: hsl(222 20% 12%);
   --sidebar-border-c: hsl(220 13% 89%);
   --sidebar-ring-c: hsl(190 85% 42%);
-  --chart-tooltip-bg: hsl(0 0% 100%);
-  --chart-tooltip-border: hsl(220 13% 87%);
-  --chart-tooltip-fg: hsl(222 20% 12%);
-  --chart-axis-fg: hsl(215 15% 45%);
-  --chart-grid: rgba(148, 163, 184, 0.15);
   --map-tip: hsl(0 0% 100%);
 }
 
@@ -67,11 +62,6 @@
   --sidebar-accent-fg: hsl(210 20% 90%);
   --sidebar-border-c: hsl(220 15% 15%);
   --sidebar-ring-c: hsl(190 85% 50%);
-  --chart-tooltip-bg: hsl(220 18% 12%);
-  --chart-tooltip-border: hsl(220 15% 20%);
-  --chart-tooltip-fg: hsl(210 20% 90%);
-  --chart-axis-fg: hsl(215 15% 55%);
-  --chart-grid: rgba(148, 163, 184, 0.1);
   --map-tip: hsl(220 18% 12%);
 }
 

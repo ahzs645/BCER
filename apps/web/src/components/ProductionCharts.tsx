@@ -11,7 +11,7 @@ import {
 } from "recharts";
 import type { GasUnitOption, LiquidUnitOption, WellDetail } from "@/types";
 import { formatNumber } from "@/lib/format";
-import { tooltipStyle, axisTickStyle, gridStroke } from "@/lib/chart-theme";
+import { useChartTheme } from "@/lib/chart-theme";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ProductionChartsProps {
@@ -42,6 +42,7 @@ function liquidUnit(unit: GasUnitOption): LiquidUnitOption {
 }
 
 export function ProductionCharts({ detail, unit }: ProductionChartsProps) {
+  const { tooltipStyle, axisTickStyle, gridStroke } = useChartTheme();
   const gasKey = valueKey("gasVolume", unit);
   const avgKey = valueKey("avgDaily", unit);
   const yearlyGas = yearlyGasKey(unit);

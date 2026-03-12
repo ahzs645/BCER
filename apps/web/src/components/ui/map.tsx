@@ -16,6 +16,7 @@ import {
 import { createPortal } from "react-dom";
 import { X, Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/lib/theme";
 import { MAP_STYLES } from "./map-styles";
 
 type MapContextValue = {
@@ -39,6 +40,7 @@ type MapProps = {
 
 const Map = forwardRef<MapRef, MapProps>(function Map({ children, ...props }, ref) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { theme } = useTheme();
   const [mapInstance, setMapInstance] = useState<MapLibreGL.Map | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isStyleLoaded, setIsStyleLoaded] = useState(false);
@@ -51,7 +53,7 @@ const Map = forwardRef<MapRef, MapProps>(function Map({ children, ...props }, re
 
     const map = new MapLibreGL.Map({
       container: containerRef.current,
-      style: MAP_STYLES.dark,
+      style: MAP_STYLES[theme],
       renderWorldCopies: false,
       attributionControl: { compact: true },
       ...props,
@@ -78,6 +80,13 @@ const Map = forwardRef<MapRef, MapProps>(function Map({ children, ...props }, re
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Switch basemap when theme changes
+  useEffect(() => {
+    if (!mapInstance) return;
+    setIsStyleLoaded(false);
+    mapInstance.setStyle(MAP_STYLES[theme]);
+  }, [theme, mapInstance]);
 
   const isLoading = !isLoaded || !isStyleLoaded;
 

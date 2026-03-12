@@ -27,7 +27,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Building2, ArrowLeft, Flame, Layers, TrendingUp } from "lucide-react";
 import { fetchOperatorAnalytics, fetchOperatorDetail } from "@/lib/api";
 import { formatNumber } from "@/lib/format";
-import { tooltipStyle, axisTickStyle, gridStroke } from "@/lib/chart-theme";
+import { useChartTheme } from "@/lib/chart-theme";
 import type { OperatorAnalyticsData, OperatorDetailData, OperatorSummary } from "@/types";
 
 const BAR_COLOR = "#06b6d4";
@@ -41,6 +41,7 @@ function OperatorList({
   data: OperatorAnalyticsData;
   onSelect: (op: OperatorSummary) => void;
 }) {
+  const { tooltipStyle, axisTickStyle, gridStroke } = useChartTheme();
   const [view, setView] = useState<"wells" | "production">("wells");
   const list = view === "wells" ? data.topByWellCount : data.topByProduction;
 
@@ -230,6 +231,7 @@ function OperatorDetailView({
   operatorId: string;
   onBack: () => void;
 }) {
+  const { tooltipStyle, axisTickStyle, gridStroke } = useChartTheme();
   const [data, setData] = useState<OperatorDetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
