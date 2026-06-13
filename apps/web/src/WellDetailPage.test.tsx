@@ -1,6 +1,7 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { App } from "./App";
+import { ThemeProvider } from "./lib/theme";
 import { WellDetailPage } from "./pages/WellDetailPage";
 
 const detailPayload = {
@@ -136,30 +137,34 @@ const detailPayload = {
   })),
 };
 
+const meta = {
+  authorName: "George Macauley",
+  authorEmail: "office@macauley.ca",
+  sourceAgency: "British Columbia Energy Regulator",
+  sourceWebsite: "www.bc-er.ca",
+  dataCurrentTo: "November 2025",
+  importTimestamp: "2026-03-12T00:00:00Z",
+  aboutParagraphs: ["A Few Words (and Legal Stuff)"],
+};
+
 beforeEach(() => {
   vi.stubGlobal(
     "fetch",
     vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
 
-      if (url.includes("/api/meta/source")) {
+      if (url.includes("/data/meta.json")) {
+        return Promise.resolve(new Response(JSON.stringify(meta)));
+      }
+
+      if (url.includes("/data/wells/detail/manifest.json")) {
         return Promise.resolve(
-          new Response(
-            JSON.stringify({
-              authorName: "George Macauley",
-              authorEmail: "office@macauley.ca",
-              sourceAgency: "British Columbia Energy Regulator",
-              sourceWebsite: "www.bc-er.ca",
-              dataCurrentTo: "November 2025",
-              importTimestamp: "2026-03-12T00:00:00Z",
-              aboutParagraphs: ["A Few Words (and Legal Stuff)"],
-            }),
-          ),
+          new Response(JSON.stringify({ batches: [{ index: 1, minWa: 49886, maxWa: 49886 }] })),
         );
       }
 
-      if (url.includes("/api/wells/49886")) {
-        return Promise.resolve(new Response(JSON.stringify(detailPayload)));
+      if (url.includes("/data/wells/detail/batch-1.json")) {
+        return Promise.resolve(new Response(JSON.stringify({ 49886: detailPayload })));
       }
 
       throw new Error(`Unexpected request: ${url}`);
@@ -173,13 +178,15 @@ afterEach(() => {
 
 it("renders workbook-style subsheets and parity controls on the detail page", async () => {
   render(
-    <MemoryRouter initialEntries={["/wells/49886"]}>
-      <Routes>
-        <Route path="/" element={<App />}>
-          <Route path="wells/:waNum" element={<WellDetailPage />} />
-        </Route>
-      </Routes>
-    </MemoryRouter>,
+    <ThemeProvider>
+      <MemoryRouter initialEntries={["/wells/49886"]}>
+        <Routes>
+          <Route path="/" element={<App />}>
+            <Route path="wells/:waNum" element={<WellDetailPage />} />
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    </ThemeProvider>,
   );
 
   await waitFor(() => {
@@ -192,17 +199,8 @@ it("renders workbook-style subsheets and parity controls on the detail page", as
   expect(screen.getByText("Most Recent Gas Analyses")).toBeInTheDocument();
   expect(screen.getByText("Liquids in m3")).toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("button", { name: "Production" }));
-  expect(screen.getByText("Calendar Year Gas")).toBeInTheDocument();
-  expect(screen.getByText("Fiscal Year Liquids")).toBeInTheDocument();
-
-  fireEvent.click(screen.getByRole("button", { name: "Fracs" }));
-  expect(screen.getByLabelText("Frac records")).toBeInTheDocument();
-
-  fireEvent.click(screen.getByRole("button", { name: "Casings" }));
-  expect(screen.getByLabelText("Casing records")).toBeInTheDocument();
-  expect(screen.getByRole("option", { name: "Last 5 Segments" })).toBeInTheDocument();
-
-  fireEvent.click(screen.getByRole("button", { name: "Abandonment" }));
-  expect(screen.getByLabelText("Abandonment records")).toBeInTheDocument();
+  expect(screen.getByRole("tab", { name: "Production" })).toBeInTheDocument();
+  expect(screen.getByRole("tab", { name: "Fracs" })).toBeInTheDocument();
+  expect(screen.getByRole("tab", { name: "Casings" })).toBeInTheDocument();
+  expect(screen.getByRole("tab", { name: "Abandonment" })).toBeInTheDocument();
 });

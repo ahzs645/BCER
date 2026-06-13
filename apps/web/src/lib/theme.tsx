@@ -13,9 +13,11 @@ const STORAGE_KEY = "bcer-theme";
 
 function getInitialTheme(): Theme {
   if (typeof window === "undefined") return "dark";
-  const stored = localStorage.getItem(STORAGE_KEY);
+  const stored = typeof window.localStorage?.getItem === "function" ? window.localStorage.getItem(STORAGE_KEY) : null;
   if (stored === "light" || stored === "dark") return stored;
-  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  return typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: light)").matches
+    ? "light"
+    : "dark";
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -24,7 +26,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle("dark", theme === "dark");
-    localStorage.setItem(STORAGE_KEY, theme);
+    if (typeof window.localStorage?.setItem === "function") {
+      window.localStorage.setItem(STORAGE_KEY, theme);
+    }
   }, [theme]);
 
   const toggle = useCallback(() => {

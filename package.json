@@ -6,7 +6,7 @@
     "apps/*"
   ],
   "scripts": {
-    "import:data": "python3 scripts/import_bcer.py --xlsx ./View_BCER_Data_Most_Recent.xlsm --accdb ./DBS_BCER_Data_2024_09_SEP_10.accdb --db ./data/bcer.sqlite",
+    "import:data": "python3 scripts/import_bcer.py --xlsx ./View_BCER_Data_Most_Recent.xlsm --accdb ./data/DBS_BCER_Data_Most_Recent.accdb --db ./data/bcer.sqlite",
     "dev:api": "npm --workspace @bcer/api run dev",
     "dev:web": "npm --workspace @bcer/web run dev",
     "dev": "concurrently -n api,web -c cyan,magenta \"npm run dev:api\" \"npm run dev:web\"",

@@ -1,14 +1,15 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, rmSync, statSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { fileURLToPath } from "node:url";
 
-const repoRoot = "/Users/ahmadjalil/Downloads/BCER";
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const testDbPath = resolve(repoRoot, "data/test-bcer.sqlite");
 const sourceFiles = [
   resolve(repoRoot, "scripts/import_bcer.py"),
   resolve(repoRoot, "View_BCER_Data_Most_Recent.xlsm"),
-  resolve(repoRoot, "DBS_BCER_Data_2024_09_SEP_10.accdb"),
+  resolve(repoRoot, "data/DBS_BCER_Data_Most_Recent.accdb"),
 ];
 
 export function ensureTestDatabase() {
@@ -45,7 +46,7 @@ export function ensureTestDatabase() {
         "--xlsx",
         resolve(repoRoot, "View_BCER_Data_Most_Recent.xlsm"),
         "--accdb",
-        resolve(repoRoot, "DBS_BCER_Data_2024_09_SEP_10.accdb"),
+        resolve(repoRoot, "data/DBS_BCER_Data_Most_Recent.accdb"),
         "--db",
         testDbPath,
       ],

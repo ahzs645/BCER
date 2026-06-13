@@ -14,6 +14,7 @@ export type {
   OperatorSummary,
   ProductionExplorerData,
   ProductionExplorerWell,
+  ProductionSeriesPoint,
   SearchResponse,
   SortOption,
   SourceMeta,

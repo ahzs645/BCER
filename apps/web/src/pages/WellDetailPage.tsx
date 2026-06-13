@@ -18,6 +18,7 @@ import type {
   GasUnitOption,
   KeyValueRow,
   LiquidUnitOption,
+  ProductionSeriesPoint,
   SourceMeta,
   WellDetail,
 } from "@/types";
@@ -149,18 +150,60 @@ function BlockSelector({ label, rowCount, value, onChange, includeLast = false }
   );
 }
 
-function buildPayZoneSummaryRows(payZones: KeyValueRow[]) {
+function buildPayZoneSummary(payZones: KeyValueRow[]) {
   const deepest = deepestPayZone(payZones);
-  if (!deepest) return [];
-  return [{
-    deepest_top_pay_depth: numericField(deepest, "meas_top_pay_depth"),
-    pay_type: stringField(deepest, "pay_type"),
-    porosity_max: maxField(payZones, "porosity"),
-    porosity_min: minField(payZones, "porosity"),
-    saturation_max: maxField(payZones, "saturation"),
-    saturation_min: minField(payZones, "saturation"),
+  if (!deepest) return null;
+  return {
+    topDepth: numericField(deepest, "meas_top_pay_depth"),
+    payType: stringField(deepest, "pay_type"),
+    porosityMax: maxField(payZones, "porosity"),
+    porosityMin: minField(payZones, "porosity"),
+    saturationMax: maxField(payZones, "saturation"),
+    saturationMin: minField(payZones, "saturation"),
     lithology: stringField(deepest, "lithology"),
-  }];
+  };
+}
+
+function formatMaxMin(max: number | null, min: number | null) {
+  if (max === null && min === null) return "—";
+  return `${formatNumber(max, 2)} / ${formatNumber(min, 2)}`;
+}
+
+// Sum of the per-type frac counts reported in the FRAC_Summary sheet — matches
+// the "Num Frac's Reported" figure in the workbook's high-level well summary.
+function computeNumFracsReported(fracSummaryRows: KeyValueRow[]) {
+  const summary = fracSummaryRows[0];
+  if (!summary) return null;
+  const keys = ["num_co2_fracs", "num_slh_fracs", "num_slw_fracs", "num_dgl_fracs", "num_nes_fracs"];
+  let total = 0;
+  let hasValue = false;
+  for (const key of keys) {
+    const value = numericField(summary, key);
+    if (value !== null) {
+      total += value;
+      hasValue = true;
+    }
+  }
+  return hasValue ? total : null;
+}
+
+// Days on production = total volume / average daily volume. Both are in the same
+// base unit so the ratio is unit-independent, matching the workbook's derived row.
+function daysOnProduction(gasKm3: number | null, avgDailyKm3: number | null) {
+  if (gasKm3 === null || avgDailyKm3 === null || avgDailyKm3 === 0) return null;
+  return gasKm3 / avgDailyKm3;
+}
+
+function monthlyGasForUnit(unit: GasUnitOption, point: ProductionSeriesPoint) {
+  if (unit === "mcf") return point.gasVolumeMcf;
+  if (unit === "kmcf") return point.gasVolumeKmcf;
+  return point.gasVolumeKm3;
+}
+
+function monthlyDailyForUnit(unit: GasUnitOption, point: ProductionSeriesPoint) {
+  if (unit === "mcf") return point.avgDailyMcf;
+  if (unit === "kmcf") return point.avgDailyKmcf;
+  return point.avgDailyKm3;
 }
 
 function buildFracTypeSummaryRows(fracSummaryRows: KeyValueRow[]) {
@@ -282,8 +325,10 @@ export function WellDetailPage() {
 
   const recentGasRows = buildRecentGasRows(detail.recentGasAnalysis);
   const gasExtremaRows = buildGasExtremaRows(detail.gasAnalysis);
-  const payZoneSummaryRows = buildPayZoneSummaryRows(detail.payZones);
+  const payZoneSummary = buildPayZoneSummary(detail.payZones);
   const fracTypeSummaryRows = buildFracTypeSummaryRows(detail.fracSummary);
+  const numFracsReported = computeNumFracsReported(detail.fracSummary);
+  const fracReported = (numFracsReported ?? 0) > 0 || detail.fracDescriptions.length > 0;
 
   const fiscalYearRows = detail.fiscalYearSeries.map((row) => ({
     fiscal_year: row.fiscalYear,
@@ -291,13 +336,24 @@ export function WellDetailPage() {
     oil: oilValueForUnit(unit, row),
     condensate: condensateValueForUnit(unit, row),
     avg_daily: gasValueForUnit(unit, row, "avgDaily"),
+    days_on_production: daysOnProduction(row.gasKm3, row.avgDailyKm3),
   }));
 
   const calendarYearRows = detail.calendarYearSeries.map((row) => ({
     calendar_year: row.calendarYear,
     gas: unit === "mcf" ? row.gasMcf : unit === "kmcf" ? row.gasKmcf : row.gasKm3,
     avg_daily: unit === "mcf" ? row.avgDailyMcf : unit === "kmcf" ? row.avgDailyKmcf : row.avgDailyKm3,
+    days_on_production: daysOnProduction(row.gasKm3, row.avgDailyKm3),
   }));
+
+  const firstMonthDetailRows = detail.productionSeries
+    .filter((point) => point.gasVolumeKm3 !== null || point.avgDailyKm3 !== null)
+    .map((point) => ({
+      month: point.periodLabel,
+      gas_production: monthlyGasForUnit(unit, point),
+      gas_daily: monthlyDailyForUnit(unit, point),
+      days_on_production: daysOnProduction(point.gasVolumeKm3, point.avgDailyKm3),
+    }));
 
   const fracDescriptionRows = sliceRecordBlock(detail.fracDescriptions, fracBlock);
   const casingRows = sliceRecordBlock(detail.casings, casingBlock);
@@ -330,6 +386,7 @@ export function WellDetailPage() {
           <div className="flex flex-wrap gap-2 sm:flex-col sm:items-end">
             <Badge variant="outline">{meta?.dataCurrentTo ?? "—"}</Badge>
             <Badge variant="outline">{detail.overview.orientation ?? "VERT"}</Badge>
+            <Badge variant={fracReported ? "default" : "outline"}>{fracReported ? "Frac'd" : "Not frac'd"}</Badge>
             <Badge variant="outline">{detail.overview.operatorAbbr?.trim() || "No abbr"}</Badge>
           </div>
         </CardContent>
@@ -345,6 +402,7 @@ export function WellDetailPage() {
         <StatCard label="Surface location" value={formatLatLon(detail.overview.surfLat, detail.overview.surfLon)} />
         <StatCard label="Measured depth" value={formatNumber(detail.overview.totalMDepth, 2)} />
         <StatCard label="TV depth" value={formatNumber(detail.overview.maxTvDepth, 2)} />
+        <StatCard label="Fracs reported" value={formatNumber(numFracsReported, 0)} />
       </div>
 
       {/* Tabbed Detail */}
@@ -418,7 +476,38 @@ export function WellDetailPage() {
 
                 <Card className="border-border/30 bg-card/40">
                   <CardHeader className="pb-2"><CardTitle className="text-sm">Pay Zone Snapshot</CardTitle></CardHeader>
-                  <CardContent className="pt-0"><DataTable rows={payZoneSummaryRows} emptyMessage="No pay zone summary rows." /></CardContent>
+                  <CardContent className="pt-0">
+                    {payZoneSummary ? (
+                      <dl className="space-y-1.5 text-sm">
+                        <div className="flex items-center justify-between gap-2">
+                          <dt className="text-muted-foreground">Deepest pay</dt>
+                          <dd className="font-medium">
+                            {payZoneSummary.topDepth !== null
+                              ? `Deepest @ ${formatNumber(payZoneSummary.topDepth, 1)}m TOP`
+                              : "—"}
+                          </dd>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <dt className="text-muted-foreground">Pay type</dt>
+                          <dd className="font-medium">{payZoneSummary.payType ?? "No Pay Type"}</dd>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <dt className="text-muted-foreground">Porosity (max / min)</dt>
+                          <dd className="font-medium">{formatMaxMin(payZoneSummary.porosityMax, payZoneSummary.porosityMin)}</dd>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <dt className="text-muted-foreground">Saturation (max / min)</dt>
+                          <dd className="font-medium">{formatMaxMin(payZoneSummary.saturationMax, payZoneSummary.saturationMin)}</dd>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <dt className="text-muted-foreground">Lithology</dt>
+                          <dd className="font-medium">{payZoneSummary.lithology ?? "—"}</dd>
+                        </div>
+                      </dl>
+                    ) : (
+                      <p className="py-3 text-center text-sm text-muted-foreground">No pay zone summary rows.</p>
+                    )}
+                  </CardContent>
                 </Card>
 
                 <Card className="border-border/30 bg-card/40">
@@ -466,6 +555,19 @@ export function WellDetailPage() {
 
             <TabsContent value="production" className="space-y-4">
               <ProductionCharts detail={detail} unit={unit} />
+              <Card className="border-border/30 bg-card/40">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm">First Months Detail</CardTitle>
+                    <span className="text-xs text-muted-foreground">
+                      Gas {gasUnitLabels[unit]} · Daily {gasUnitLabels[unit]}/d · Days on prod
+                    </span>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <DataTable rows={firstMonthDetailRows} emptyMessage="No monthly production rows." />
+                </CardContent>
+              </Card>
               <div className="grid gap-4 md:grid-cols-2">
                 <Card className="border-border/30 bg-card/40">
                   <CardHeader className="pb-2">
