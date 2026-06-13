@@ -479,6 +479,32 @@ export function normalizeSearchFilters(query: Record<string, unknown>): Required
   };
 }
 
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+// Formats a YYYYMM period (e.g. 202604) as "April 2026".
+function formatPeriodMonth(period: number | null): string | null {
+  if (!period) return null;
+  const year = Math.floor(period / 100);
+  const month = period % 100;
+  if (month < 1 || month > 12 || year < 1900) return null;
+  return `${MONTH_NAMES[month - 1]} ${year}`;
+}
+
+// Derives how current the dataset is from the latest first-production period
+// actually present in the data, rather than trusting the workbook's hand-typed
+// "Data_Current_To" cell (which can lag the data after a refresh).
+function deriveDataCurrentTo(db: DatabaseSync): string | null {
+  const row = queryRow(
+    db,
+    "SELECT MAX(first_prod_period) AS latest FROM prd_profile_gas WHERE first_prod_period IS NOT NULL",
+    {},
+  );
+  return formatPeriodMonth(toNumber(row?.latest));
+}
+
 export function getSourceMeta(db: DatabaseSync): SourceMeta {
   const rows = queryRows(db, "SELECT key, value FROM metadata", {});
   const metadata = new Map(rows.map((row) => [String(row.key), String(row.value)]));
@@ -488,7 +514,8 @@ export function getSourceMeta(db: DatabaseSync): SourceMeta {
     authorEmail: metadata.get("author_email") ?? "",
     sourceAgency: metadata.get("source_agency") ?? "",
     sourceWebsite: metadata.get("source_website") ?? "",
-    dataCurrentTo: metadata.get("data_current_to") ?? "",
+    // Prefer the data-derived currency; fall back to the workbook's stated value.
+    dataCurrentTo: deriveDataCurrentTo(db) ?? metadata.get("data_current_to") ?? "",
     importTimestamp: metadata.get("import_timestamp") ?? "",
     aboutParagraphs: JSON.parse(metadata.get("about_paragraphs") ?? "[]") as string[],
   };

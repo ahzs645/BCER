@@ -37,7 +37,6 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 shrink-0 rounded-lg bg-gradient-to-br from-primary to-cyan-400" />
           <div className="flex flex-col overflow-hidden group-data-[collapsible=icon]:hidden">
             <span className="text-[0.65rem] font-bold uppercase tracking-[0.12em] text-primary">
               BC Energy Regulator
