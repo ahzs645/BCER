@@ -29,6 +29,38 @@ const gasUnitLabels: Record<GasUnitOption, string> = {
   kmcf: "000 MCF",
 };
 
+// Chemistry-style header labels for the gas-analysis tables. Component values are
+// mole fractions; MW columns are molecular weights, C5 is condensate yield (mL/mol).
+const gasAnalysisLabels: Record<string, string> = {
+  sample_date: "Sample Date",
+  sample_order: "Sample #",
+  h2_fractn: "H2",
+  helium_fractn: "Helium",
+  co2_fractn: "CO2",
+  h2s_fractn: "H2S",
+  n2_fractn: "N2",
+  c1_fractn: "C1",
+  c2_fractn: "C2",
+  c3_fractn: "C3",
+  ic4_fractn: "iC4",
+  nc4_fractn: "nC4",
+  ic5_fractn: "iC5",
+  nc5_fractn: "nC5",
+  c6_fractn: "C6",
+  c7_fractn: "C7",
+  c8_fractn: "C8",
+  c9_fractn: "C9",
+  c10_fractn: "C10",
+  c6_to_c10_fractn: "C6–C10",
+  c5_ml_mol: "C5 (mL/mol)",
+  molclr_wt_of_c7: "MW C7+",
+  molclr_wt_of_gas: "MW Gas",
+  co2_max: "CO2 max",
+  co2_min: "CO2 min",
+  h2s_max: "H2S max",
+  h2s_min: "H2S min",
+};
+
 const recordBlocks = [
   { value: "0", label: "First 5", start: 0 },
   { value: "5", label: "6-10", start: 5 },
@@ -540,7 +572,7 @@ export function WellDetailPage() {
                       <span className="text-xs text-muted-foreground">CO2 / H2S range</span>
                     </div>
                   </CardHeader>
-                  <CardContent className="pt-0"><DataTable rows={gasExtremaRows} emptyMessage="No gas analysis extrema." /></CardContent>
+                  <CardContent className="pt-0"><DataTable rows={gasExtremaRows} labels={gasAnalysisLabels} emptyMessage="No gas analysis extrema." /></CardContent>
                 </Card>
 
                 <Card className="border-border/30 bg-card/40 md:col-span-2">
@@ -550,7 +582,7 @@ export function WellDetailPage() {
                       <span className="text-xs text-muted-foreground">Up to 3 rows</span>
                     </div>
                   </CardHeader>
-                  <CardContent className="pt-0"><DataTable rows={recentGasRows} emptyMessage="No gas analysis rows." /></CardContent>
+                  <CardContent className="pt-0"><DataTable rows={recentGasRows} labels={gasAnalysisLabels} emptyMessage="No gas analysis rows." /></CardContent>
                 </Card>
               </div>
 
@@ -628,7 +660,7 @@ export function WellDetailPage() {
               <Card className="border-border/30 bg-card/40">
                 <CardHeader className="pb-2"><CardTitle className="text-sm">Gas Analysis</CardTitle></CardHeader>
                 <CardContent className="pt-0">
-                  <DataTable rows={buildFullGasRows(detail.gasAnalysis)} emptyMessage="No gas analysis rows." />
+                  <DataTable rows={buildFullGasRows(detail.gasAnalysis)} labels={gasAnalysisLabels} emptyMessage="No gas analysis rows." />
                 </CardContent>
               </Card>
             </TabsContent>

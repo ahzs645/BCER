@@ -11,9 +11,11 @@ import {
 interface DataTableProps {
   rows: Array<Record<string, string | number | null>>;
   emptyMessage?: string;
+  /** Optional per-column header overrides; falls back to humanizeKey(column). */
+  labels?: Record<string, string>;
 }
 
-export function DataTable({ rows, emptyMessage = "No rows available." }: DataTableProps) {
+export function DataTable({ rows, emptyMessage = "No rows available.", labels }: DataTableProps) {
   if (rows.length === 0) {
     return (
       <div className="rounded-lg bg-muted/20 px-4 py-3 text-center text-sm text-muted-foreground">
@@ -31,7 +33,7 @@ export function DataTable({ rows, emptyMessage = "No rows available." }: DataTab
           <TableRow className="border-border/50 hover:bg-transparent">
             {columns.map((column) => (
               <TableHead key={column} className="text-xs font-semibold uppercase tracking-wider">
-                {humanizeKey(column)}
+                {labels?.[column] ?? humanizeKey(column)}
               </TableHead>
             ))}
           </TableRow>
