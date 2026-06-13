@@ -19,6 +19,18 @@ const detailBatchCache = new Map<number, Record<string, WellDetail>>();
 
 // ---- JSON loader ----
 async function loadJson<T>(path: string): Promise<T> {
+  if (import.meta.env.PROD && typeof DecompressionStream !== "undefined") {
+    try {
+      const compressed = await fetch(`${BASE}/${path}.gz`);
+      if (compressed.ok && compressed.body) {
+        const stream = compressed.body.pipeThrough(new DecompressionStream("gzip"));
+        return new Response(stream).json() as Promise<T>;
+      }
+    } catch {
+      // Fall back to the uncompressed JSON path below.
+    }
+  }
+
   const res = await fetch(`${BASE}/${path}`);
   if (!res.ok) throw new Error(`Failed to load ${path}: ${res.status}`);
   return res.json();

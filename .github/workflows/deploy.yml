@@ -27,11 +27,8 @@ jobs:
 
       - run: npm ci
 
-      - name: Export static data from SQLite
-        run: npm run export:static
-
-      - name: Build React app
-        run: npm run build:web
+      - name: Build static site
+        run: npm run build:static
 
       - uses: actions/upload-pages-artifact@v3
         with:

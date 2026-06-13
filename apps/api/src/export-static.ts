@@ -16,6 +16,19 @@ import type { WellSearchResult } from "../../../packages/shared/src/index.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "../../..");
 const outDir = resolve(repoRoot, "apps/web/public/data");
+const DEFAULT_DETAIL_BATCH_SIZE = 50;
+
+function detailBatchSize() {
+  const rawValue = process.env.BCER_DETAIL_BATCH_SIZE;
+  if (!rawValue) return DEFAULT_DETAIL_BATCH_SIZE;
+
+  const parsed = Number.parseInt(rawValue, 10);
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    throw new Error(`BCER_DETAIL_BATCH_SIZE must be a positive integer, received ${rawValue}.`);
+  }
+
+  return parsed;
+}
 
 function ensureDir(dir: string) {
   mkdirSync(dir, { recursive: true });
@@ -111,7 +124,8 @@ function main() {
 
   // --- Well details (batched) ---
   console.log("\nWell details:");
-  const BATCH_SIZE = 200;
+  const BATCH_SIZE = detailBatchSize();
+  console.log(`  detail batch size: ${BATCH_SIZE} wells`);
   const batches: Array<{ index: number; minWa: number; maxWa: number }> = [];
   let totalExported = 0;
 
