@@ -229,6 +229,24 @@ function buildRecentGasRows(rows: GasAnalysisRow[]) {
   }));
 }
 
+// Full per-sample gas analysis: individual C6–C10 fractions plus the molecular-weight
+// columns carried in the GAS_ANAL sheet (the recent/summary view keeps C6-C10 combined
+// for parity with the source workbook's high-level display).
+function buildFullGasRows(rows: GasAnalysisRow[]) {
+  return rows.map((row) => ({
+    sample_date: row.sampleDate, sample_order: row.sampleOrder,
+    h2_fractn: row.h2Fractn, helium_fractn: row.heliumFractn,
+    co2_fractn: row.co2Fractn, h2s_fractn: row.h2sFractn, n2_fractn: row.n2Fractn,
+    c1_fractn: row.c1Fractn, c2_fractn: row.c2Fractn, c3_fractn: row.c3Fractn,
+    ic4_fractn: row.ic4Fractn, nc4_fractn: row.nc4Fractn,
+    ic5_fractn: row.ic5Fractn, nc5_fractn: row.nc5Fractn,
+    c6_fractn: row.c6Fractn, c7_fractn: row.c7Fractn, c8_fractn: row.c8Fractn,
+    c9_fractn: row.c9Fractn, c10_fractn: row.c10Fractn,
+    c6_to_c10_fractn: row.c6ToC10Fractn,
+    c5_ml_mol: row.c5MlMol, molclr_wt_of_c7: row.molclrWtOfC7, molclr_wt_of_gas: row.molclrWtOfGas,
+  }));
+}
+
 function buildGasExtremaRows(rows: GasAnalysisRow[]) {
   const valuesFor = (selector: (row: GasAnalysisRow) => number | null) =>
     rows.map(selector).filter((v): v is number => v !== null);
@@ -610,7 +628,7 @@ export function WellDetailPage() {
               <Card className="border-border/30 bg-card/40">
                 <CardHeader className="pb-2"><CardTitle className="text-sm">Gas Analysis</CardTitle></CardHeader>
                 <CardContent className="pt-0">
-                  <DataTable rows={detail.gasAnalysis as unknown as Array<Record<string, string | number | null>>} emptyMessage="No gas analysis rows." />
+                  <DataTable rows={buildFullGasRows(detail.gasAnalysis)} emptyMessage="No gas analysis rows." />
                 </CardContent>
               </Card>
             </TabsContent>

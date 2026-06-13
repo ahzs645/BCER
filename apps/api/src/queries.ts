@@ -361,12 +361,12 @@ function buildActivityLocations(
 }
 
 function mapGasAnalysisRow(row: RowRecord): GasAnalysisRow {
-  const c6ToC10 =
-    (toNumber(row.c6_fractn) ?? 0) +
-    (toNumber(row.c7_fractn) ?? 0) +
-    (toNumber(row.c8_fractn) ?? 0) +
-    (toNumber(row.c9_fractn) ?? 0) +
-    (toNumber(row.c10_fractn) ?? 0);
+  const c6 = toNumber(row.c6_fractn);
+  const c7 = toNumber(row.c7_fractn);
+  const c8 = toNumber(row.c8_fractn);
+  const c9 = toNumber(row.c9_fractn);
+  const c10 = toNumber(row.c10_fractn);
+  const c6ToC10 = (c6 ?? 0) + (c7 ?? 0) + (c8 ?? 0) + (c9 ?? 0) + (c10 ?? 0);
 
   return {
     sampleDate: toNumber(row.sample_date),
@@ -383,7 +383,15 @@ function mapGasAnalysisRow(row: RowRecord): GasAnalysisRow {
     nc4Fractn: toNumber(row.nc4_fractn),
     ic5Fractn: toNumber(row.ic5_fractn),
     nc5Fractn: toNumber(row.nc5_fractn),
+    c6Fractn: c6,
+    c7Fractn: c7,
+    c8Fractn: c8,
+    c9Fractn: c9,
+    c10Fractn: c10,
     c6ToC10Fractn: Number(c6ToC10.toFixed(6)),
+    c5MlMol: toNumber(row.c5_ml_mol),
+    molclrWtOfC7: toNumber(row.molclr_wt_of_c7),
+    molclrWtOfGas: toNumber(row.molclr_wt_of_gas),
   };
 }
 
@@ -425,6 +433,13 @@ function parseFloatOrUndefined(value: string | undefined) {
 
   const parsed = Number.parseFloat(value);
   return Number.isNaN(parsed) ? undefined : parsed;
+}
+
+// Builds a case-insensitive LIKE pattern. Plain text becomes a "contains" match;
+// Excel-style explicit wildcards (% or *) are preserved inside the pattern so a
+// query like "NIG%CREEK" matches "NIG CREEK" and "NIGCREEK".
+function buildLikePattern(raw: string): string {
+  return `%${raw.toLowerCase().replace(/\*/g, "%")}%`;
 }
 
 export function normalizeSearchFilters(query: Record<string, unknown>): Required<Pick<WellSearchFilters, "page" | "pageSize" | "sort">> & WellSearchFilters {
@@ -534,7 +549,7 @@ export function searchWells(db: DatabaseSync, rawQuery: Record<string, unknown>)
 
   if (filters.wellName) {
     clauses.push("LOWER(COALESCE(well_name, '')) LIKE :wellName");
-    params.wellName = `%${filters.wellName.toLowerCase()}%`;
+    params.wellName = buildLikePattern(filters.wellName);
   }
 
   if (filters.operator) {
@@ -542,7 +557,7 @@ export function searchWells(db: DatabaseSync, rawQuery: Record<string, unknown>)
       "LOWER(COALESCE(operator, '')) LIKE :operatorLike",
       "LOWER(COALESCE(operator_abbr, '')) LIKE :operatorLike",
     ];
-    params.operatorLike = `%${filters.operator.toLowerCase()}%`;
+    params.operatorLike = buildLikePattern(filters.operator);
 
     const operatorId = parseIntOrUndefined(filters.operator);
     if (operatorId !== undefined) {
@@ -555,18 +570,18 @@ export function searchWells(db: DatabaseSync, rawQuery: Record<string, unknown>)
 
   if (filters.uwi) {
     clauses.push("LOWER(COALESCE(uwi_list, '')) LIKE :uwi");
-    params.uwi = `%${filters.uwi.toLowerCase()}%`;
+    params.uwi = buildLikePattern(filters.uwi);
   }
 
   if (filters.area) {
     clauses.push("(LOWER(COALESCE(area_desc, '')) LIKE :areaLike OR CAST(area_code AS TEXT) = :areaExact)");
-    params.areaLike = `%${filters.area.toLowerCase()}%`;
+    params.areaLike = buildLikePattern(filters.area);
     params.areaExact = filters.area;
   }
 
   if (filters.formation) {
     clauses.push("(LOWER(COALESCE(form_desc, '')) LIKE :formationLike OR CAST(form_code AS TEXT) = :formationExact)");
-    params.formationLike = `%${filters.formation.toLowerCase()}%`;
+    params.formationLike = buildLikePattern(filters.formation);
     params.formationExact = filters.formation;
   }
 

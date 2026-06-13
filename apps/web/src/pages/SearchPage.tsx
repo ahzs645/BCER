@@ -294,6 +294,12 @@ export function SearchPage() {
                     </div>
                   </div>
 
+                  <p className="text-xs text-muted-foreground">
+                    Tip: text fields match anywhere. Use <code className="font-mono">%</code> or{" "}
+                    <code className="font-mono">*</code> as a wildcard (e.g.{" "}
+                    <code className="font-mono">NIG%CREEK</code>).
+                  </p>
+
                   <Button type="submit" className="w-full">
                     Search wells
                   </Button>

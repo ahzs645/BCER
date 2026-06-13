@@ -117,7 +117,15 @@ export interface GasAnalysisRow {
   nc4Fractn: number | null;
   ic5Fractn: number | null;
   nc5Fractn: number | null;
+  c6Fractn: number | null;
+  c7Fractn: number | null;
+  c8Fractn: number | null;
+  c9Fractn: number | null;
+  c10Fractn: number | null;
   c6ToC10Fractn: number | null;
+  c5MlMol: number | null;
+  molclrWtOfC7: number | null;
+  molclrWtOfGas: number | null;
 }
 
 export interface ActivityLocationRow {

@@ -398,6 +398,9 @@ def build_well_search(cursor: sqlite3.Cursor) -> None:
           NULLIF(wsi.horiz_well, '-') AS orientation,
           CAST(wsi.surf_lat_dec_deg AS REAL) AS surf_lat,
           CAST(wsi.surf_lon_dec_deg AS REAL) AS surf_lon,
+          -- GRID (NTS/BCGS map grid) is not provided by the BCER source: it is
+          -- absent from the Access WELL_SEARCH_INDEX table and blank in the
+          -- workbook's Well_Names scratch sheet, so it stays NULL.
           NULL AS grid,
           COALESCE(prod.gas_prod_3yr, 0) AS gas_prod_3yr,
           COALESCE(prod.gas_prod_5yr, 0) AS gas_prod_5yr,

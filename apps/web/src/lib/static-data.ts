@@ -67,6 +67,21 @@ function parseNum(v: string | number | undefined): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
+// Builds a case-insensitive matcher. Plain text is a "contains" match; Excel-style
+// explicit wildcards (% or *) match any run of characters, so "NIG%CREEK" matches
+// both "NIG CREEK" and "NIGCREEK". Mirrors buildLikePattern in the API queries.
+function makeTextMatcher(rawTerm: string): (value: string | null | undefined) => boolean {
+  const term = rawTerm.toLowerCase();
+  if (term.includes("%") || term.includes("*")) {
+    const pattern = term
+      .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
+      .replace(/[%*]/g, ".*");
+    const re = new RegExp(pattern); // unanchored → "contains"
+    return (value) => (value ? re.test(value.toLowerCase()) : false);
+  }
+  return (value) => (value ? value.toLowerCase().includes(term) : false);
+}
+
 export function clientSearch(
   allWells: WellSearchResult[],
   filters: Record<string, string | number | undefined>,
@@ -89,47 +104,39 @@ export function clientSearch(
 
   // --- Text filters ---
   if (filters.wellName && typeof filters.wellName === "string") {
-    const term = filters.wellName.toLowerCase();
-    results = results.filter((w) =>
-      w.wellName?.toLowerCase().includes(term),
-    );
+    const matches = makeTextMatcher(filters.wellName);
+    results = results.filter((w) => matches(w.wellName));
   }
 
   if (filters.operator && typeof filters.operator === "string") {
-    const term = filters.operator.toLowerCase();
+    const matches = makeTextMatcher(filters.operator);
     const opId = parseNum(filters.operator);
     results = results.filter(
       (w) =>
-        w.operator?.toLowerCase().includes(term) ||
-        w.operatorAbbr?.toLowerCase().includes(term) ||
+        matches(w.operator) ||
+        matches(w.operatorAbbr) ||
         (opId !== undefined && w.operatorId === opId),
     );
   }
 
   if (filters.uwi && typeof filters.uwi === "string") {
-    const term = filters.uwi.toLowerCase();
-    results = results.filter((w) =>
-      w.uwiList.some((u) => u.toLowerCase().includes(term)),
-    );
+    const matches = makeTextMatcher(filters.uwi);
+    results = results.filter((w) => w.uwiList.some((u) => matches(u)));
   }
 
   if (filters.area && typeof filters.area === "string") {
-    const term = filters.area.toLowerCase();
+    const matches = makeTextMatcher(filters.area);
     const exact = filters.area;
     results = results.filter(
-      (w) =>
-        w.areaDesc?.toLowerCase().includes(term) ||
-        String(w.areaCode) === exact,
+      (w) => matches(w.areaDesc) || String(w.areaCode) === exact,
     );
   }
 
   if (filters.formation && typeof filters.formation === "string") {
-    const term = filters.formation.toLowerCase();
+    const matches = makeTextMatcher(filters.formation);
     const exact = filters.formation;
     results = results.filter(
-      (w) =>
-        w.formDesc?.toLowerCase().includes(term) ||
-        String(w.formCode) === exact,
+      (w) => matches(w.formDesc) || String(w.formCode) === exact,
     );
   }
 
