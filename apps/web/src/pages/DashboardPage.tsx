@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   BarChart,
@@ -24,14 +24,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SortableTableHead } from "@/components/SortableTableHead";
 import { Database, Activity, Layers, TrendingUp, Search, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fetchDashboard, fetchAggregateProduction } from "@/lib/api";
 import { formatNumber } from "@/lib/format";
 import { useChartTheme } from "@/lib/chart-theme";
+import { useSortableRows } from "@/lib/table-sort";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ProductionExplorer } from "@/components/dashboard/ProductionExplorer";
-import type { AggregateProductionData, DashboardData } from "@/types";
+import type { AggregateProductionData, DashboardData, WellSearchResult } from "@/types";
 
 const DONUT_COLORS = ["#10b981", "#0ea5e9"];
 const BAR_COLOR = "#06b6d4";
@@ -40,6 +42,7 @@ const LINE_COLOR_PROD = "#10b981";
 const LINE_COLOR_AVG = "#f59e0b";
 
 const GAS_M3_TO_MCF = 35.3147;
+const dashboardWellColumns = ["waNum", "wellName", "operator", "gasProd3Yr"] as const;
 
 function toMcf(val: number) {
   return Number((val * GAS_M3_TO_MCF).toFixed(1));
@@ -61,6 +64,26 @@ export function DashboardPage() {
   const [prodData, setProdData] = useState<AggregateProductionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const getDashboardWellSortValue = useCallback(
+    (well: WellSearchResult, key: (typeof dashboardWellColumns)[number]) => well[key],
+    [],
+  );
+  const {
+    sortedRows: sortedRecentWells,
+    sort: recentSort,
+    toggleSort: toggleRecentSort,
+  } = useSortableRows(data?.recentWells ?? [], dashboardWellColumns, getDashboardWellSortValue, {
+    key: "waNum",
+    direction: "desc",
+  });
+  const {
+    sortedRows: sortedProductionLeaders,
+    sort: productionSort,
+    toggleSort: toggleProductionSort,
+  } = useSortableRows(data?.productionLeaders ?? [], dashboardWellColumns, getDashboardWellSortValue, {
+    key: "gasProd3Yr",
+    direction: "desc",
+  });
 
   useEffect(() => {
     Promise.all([
@@ -438,13 +461,13 @@ export function DashboardPage() {
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border/50 hover:bg-transparent">
-                      <TableHead className="h-8 text-xs">WA</TableHead>
-                      <TableHead className="h-8 text-xs">Well Name</TableHead>
-                      <TableHead className="h-8 text-xs text-right">3yr Gas (000 m3)</TableHead>
+                      <SortableTableHead sort={recentSort} sortKey="waNum" onSort={toggleRecentSort} className="h-8 text-xs">WA</SortableTableHead>
+                      <SortableTableHead sort={recentSort} sortKey="wellName" onSort={toggleRecentSort} className="h-8 text-xs">Well Name</SortableTableHead>
+                      <SortableTableHead sort={recentSort} sortKey="gasProd3Yr" onSort={toggleRecentSort} className="h-8 text-xs text-right">3yr Gas (000 m3)</SortableTableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {data.recentWells.map((well) => (
+                    {sortedRecentWells.map((well) => (
                       <TableRow key={well.waNum} className="border-border/30 hover:bg-muted/50">
                         <TableCell className="py-1.5">
                           <Link to={`/wells/${well.waNum}`} className="font-medium text-primary hover:underline">
@@ -469,20 +492,28 @@ export function DashboardPage() {
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border/50 hover:bg-transparent">
-                      <TableHead className="h-8 text-xs">WA</TableHead>
-                      <TableHead className="h-8 text-xs">Operator</TableHead>
-                      <TableHead className="h-8 text-xs text-right">3yr Gas (000 m3)</TableHead>
+                      <SortableTableHead sort={productionSort} sortKey="waNum" onSort={toggleProductionSort} className="h-8 text-xs">WA</SortableTableHead>
+                      <SortableTableHead sort={productionSort} sortKey="operator" onSort={toggleProductionSort} className="h-8 text-xs">Operator</SortableTableHead>
+                      <SortableTableHead sort={productionSort} sortKey="gasProd3Yr" onSort={toggleProductionSort} className="h-8 text-xs text-right">3yr Gas (000 m3)</SortableTableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {data.productionLeaders.map((well) => (
+                    {sortedProductionLeaders.map((well) => (
                       <TableRow key={well.waNum} className="border-border/30 hover:bg-muted/50">
                         <TableCell className="py-1.5">
                           <Link to={`/wells/${well.waNum}`} className="font-medium text-primary hover:underline">
                             {well.waNum}
                           </Link>
                         </TableCell>
-                        <TableCell className="py-1.5 text-sm">{well.operator ?? "—"}</TableCell>
+                        <TableCell className="py-1.5 text-sm">
+                          {well.operator && well.operatorId ? (
+                            <Link to={`/operators?id=${well.operatorId}`} className="font-medium text-primary hover:underline">
+                              {well.operator}
+                            </Link>
+                          ) : (
+                            well.operator ?? "—"
+                          )}
+                        </TableCell>
                         <TableCell className="py-1.5 text-right text-sm font-mono">
                           {formatNumber(well.gasProd3Yr, 1)}
                         </TableCell>

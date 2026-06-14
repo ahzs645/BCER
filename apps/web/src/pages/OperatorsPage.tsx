@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   BarChart,
@@ -24,10 +24,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SortableTableHead } from "@/components/SortableTableHead";
 import { Building2, ArrowLeft, Download, Flame, Layers, TrendingUp } from "lucide-react";
 import { fetchOperatorAnalytics, fetchOperatorDetail } from "@/lib/api";
 import { formatNumber } from "@/lib/format";
 import { downloadCsv, toFilenameStem } from "@/lib/export";
+import { useSortableRows } from "@/lib/table-sort";
 import { useChartTheme } from "@/lib/chart-theme";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { OperatorAnalyticsData, OperatorDetailData, OperatorSummary } from "@/types";
@@ -35,6 +37,15 @@ import type { OperatorAnalyticsData, OperatorDetailData, OperatorSummary } from 
 const BAR_COLOR = "#06b6d4";
 const BAR_COLOR_ALT = "#10b981";
 const DONUT_COLORS = ["#10b981", "#0ea5e9"];
+const operatorListColumns = ["operator", "wellCount", "horizontalCount", "totalGas3Yr", "topArea", "topFormation"] as const;
+const operatorWellColumns = ["waNum", "wellName", "areaDesc", "formDesc", "orientation", "gasProd3Yr", "gasProd5Yr"] as const;
+
+function searchUrl(key: string, value: string | number | null | undefined) {
+  if (value === null || value === undefined || value === "") return "/search";
+  const params = new URLSearchParams();
+  params.set(key, String(value));
+  return `/search?${params.toString()}`;
+}
 
 function OperatorList({
   data,
@@ -47,6 +58,17 @@ function OperatorList({
   const isMobile = useIsMobile();
   const [view, setView] = useState<"wells" | "production">("wells");
   const list = view === "wells" ? data.topByWellCount : data.topByProduction;
+  const getOperatorSortValue = useCallback((op: OperatorSummary, key: (typeof operatorListColumns)[number]) => op[key], []);
+  const { sortedRows: sortedOperators, sort: operatorSort, setSort: setOperatorSort, toggleSort: toggleOperatorSort } = useSortableRows(
+    list,
+    operatorListColumns,
+    getOperatorSortValue,
+    { key: view === "wells" ? "wellCount" : "totalGas3Yr", direction: "desc" },
+  );
+
+  useEffect(() => {
+    setOperatorSort({ key: view === "wells" ? "wellCount" : "totalGas3Yr", direction: "desc" });
+  }, [setOperatorSort, view]);
 
   const chartData = list.slice(0, 15).map((op, index) => {
     const label = op.operatorAbbr || op.operator.slice(0, 20);
@@ -57,7 +79,7 @@ function OperatorList({
   });
 
   function exportOperators() {
-    const rows = list.map((op) => ({
+    const rows = sortedOperators.map((op) => ({
       operator_id: op.operatorId,
       operator: op.operator,
       operator_abbr: op.operatorAbbr,
@@ -187,7 +209,7 @@ function OperatorList({
         </CardHeader>
         <CardContent className="pt-0">
           <div className="space-y-3 md:hidden">
-            {list.map((op) => (
+            {sortedOperators.map((op) => (
               <div key={`${op.operatorId}-${op.operator}`} className="rounded-lg border border-border/50 bg-muted/10 p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -221,7 +243,9 @@ function OperatorList({
                   </div>
                   <div>
                     <dt className="text-xs text-muted-foreground">Top Area</dt>
-                    <dd className="break-words font-medium [overflow-wrap:anywhere]">{op.topArea ?? "—"}</dd>
+                    <dd className="break-words font-medium [overflow-wrap:anywhere]">
+                      {op.topArea ? <Link to={searchUrl("area", op.topArea)} className="text-primary hover:underline">{op.topArea}</Link> : "—"}
+                    </dd>
                   </div>
                 </dl>
               </div>
@@ -231,17 +255,17 @@ function OperatorList({
             <Table>
               <TableHeader>
                 <TableRow className="border-border/50 hover:bg-transparent">
-                  <TableHead className="h-8 text-xs">Operator</TableHead>
-                  <TableHead className="h-8 text-xs text-right">Wells</TableHead>
-                  <TableHead className="h-8 text-xs text-right">HZ</TableHead>
-                  <TableHead className="h-8 text-xs text-right">3yr Gas (000 m3)</TableHead>
-                  <TableHead className="h-8 text-xs">Top Area</TableHead>
-                  <TableHead className="h-8 text-xs">Top Formation</TableHead>
+                  <SortableTableHead sort={operatorSort} sortKey="operator" onSort={toggleOperatorSort} className="h-8 text-xs">Operator</SortableTableHead>
+                  <SortableTableHead sort={operatorSort} sortKey="wellCount" onSort={toggleOperatorSort} className="h-8 text-xs text-right">Wells</SortableTableHead>
+                  <SortableTableHead sort={operatorSort} sortKey="horizontalCount" onSort={toggleOperatorSort} className="h-8 text-xs text-right">HZ</SortableTableHead>
+                  <SortableTableHead sort={operatorSort} sortKey="totalGas3Yr" onSort={toggleOperatorSort} className="h-8 text-xs text-right">3yr Gas (000 m3)</SortableTableHead>
+                  <SortableTableHead sort={operatorSort} sortKey="topArea" onSort={toggleOperatorSort} className="h-8 text-xs">Top Area</SortableTableHead>
+                  <SortableTableHead sort={operatorSort} sortKey="topFormation" onSort={toggleOperatorSort} className="h-8 text-xs">Top Formation</SortableTableHead>
                   <TableHead className="h-8 text-xs" />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {list.map((op) => (
+                {sortedOperators.map((op) => (
                   <TableRow key={`${op.operatorId}-${op.operator}`} className="border-border/30 hover:bg-muted/50">
                     <TableCell className="py-2">
                       <button
@@ -265,10 +289,10 @@ function OperatorList({
                       {formatNumber(op.totalGas3Yr, 0)}
                     </TableCell>
                     <TableCell className="py-2 text-sm text-muted-foreground">
-                      {op.topArea ?? "—"}
+                      {op.topArea ? <Link to={searchUrl("area", op.topArea)} className="text-primary hover:underline">{op.topArea}</Link> : "—"}
                     </TableCell>
                     <TableCell className="py-2 text-sm text-muted-foreground">
-                      {op.topFormation ?? "—"}
+                      {op.topFormation ? <Link to={searchUrl("formation", op.topFormation)} className="text-primary hover:underline">{op.topFormation}</Link> : "—"}
                     </TableCell>
                     <TableCell className="py-2">
                       <Button
@@ -303,6 +327,13 @@ function OperatorDetailView({
   const [data, setData] = useState<OperatorDetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const getWellSortValue = useCallback((well: OperatorDetailData["wells"][number], key: (typeof operatorWellColumns)[number]) => well[key], []);
+  const { sortedRows: sortedWells, sort: wellSort, toggleSort: toggleWellSort } = useSortableRows(
+    data?.wells ?? [],
+    operatorWellColumns,
+    getWellSortValue,
+    { key: "gasProd3Yr", direction: "desc" },
+  );
 
   useEffect(() => {
     setLoading(true);
@@ -535,7 +566,7 @@ function OperatorDetailView({
         </CardHeader>
         <CardContent className="pt-0">
           <div className="max-h-[500px] space-y-3 overflow-y-auto md:hidden">
-            {wells.map((well) => (
+            {sortedWells.map((well) => (
               <div key={well.waNum} className="rounded-lg border border-border/50 bg-muted/10 p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -555,11 +586,15 @@ function OperatorDetailView({
                 <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
                   <div>
                     <dt className="text-xs text-muted-foreground">Area</dt>
-                    <dd className="break-words font-medium [overflow-wrap:anywhere]">{well.areaDesc ?? "—"}</dd>
+                    <dd className="break-words font-medium [overflow-wrap:anywhere]">
+                      {well.areaDesc ? <Link to={searchUrl("area", well.areaDesc)} className="text-primary hover:underline">{well.areaDesc}</Link> : "—"}
+                    </dd>
                   </div>
                   <div>
                     <dt className="text-xs text-muted-foreground">Formation</dt>
-                    <dd className="break-words font-medium [overflow-wrap:anywhere]">{well.formDesc ?? "—"}</dd>
+                    <dd className="break-words font-medium [overflow-wrap:anywhere]">
+                      {well.formDesc ? <Link to={searchUrl("formation", well.formDesc)} className="text-primary hover:underline">{well.formDesc}</Link> : "—"}
+                    </dd>
                   </div>
                   <div>
                     <dt className="text-xs text-muted-foreground">3yr Gas (000 m3)</dt>
@@ -577,17 +612,17 @@ function OperatorDetailView({
             <Table>
               <TableHeader>
                 <TableRow className="border-border/50 hover:bg-transparent">
-                  <TableHead className="h-8 text-xs sticky top-0 bg-card">WA</TableHead>
-                  <TableHead className="h-8 text-xs sticky top-0 bg-card">Well Name</TableHead>
-                  <TableHead className="h-8 text-xs sticky top-0 bg-card">Area</TableHead>
-                  <TableHead className="h-8 text-xs sticky top-0 bg-card">Formation</TableHead>
-                  <TableHead className="h-8 text-xs sticky top-0 bg-card">Orientation</TableHead>
-                  <TableHead className="h-8 text-xs text-right sticky top-0 bg-card">3yr Gas (000 m3)</TableHead>
-                  <TableHead className="h-8 text-xs text-right sticky top-0 bg-card">5yr Gas (000 m3)</TableHead>
+                  <SortableTableHead sort={wellSort} sortKey="waNum" onSort={toggleWellSort} className="h-8 text-xs sticky top-0 bg-card">WA</SortableTableHead>
+                  <SortableTableHead sort={wellSort} sortKey="wellName" onSort={toggleWellSort} className="h-8 text-xs sticky top-0 bg-card">Well Name</SortableTableHead>
+                  <SortableTableHead sort={wellSort} sortKey="areaDesc" onSort={toggleWellSort} className="h-8 text-xs sticky top-0 bg-card">Area</SortableTableHead>
+                  <SortableTableHead sort={wellSort} sortKey="formDesc" onSort={toggleWellSort} className="h-8 text-xs sticky top-0 bg-card">Formation</SortableTableHead>
+                  <SortableTableHead sort={wellSort} sortKey="orientation" onSort={toggleWellSort} className="h-8 text-xs sticky top-0 bg-card">Orientation</SortableTableHead>
+                  <SortableTableHead sort={wellSort} sortKey="gasProd3Yr" onSort={toggleWellSort} className="h-8 text-xs text-right sticky top-0 bg-card">3yr Gas (000 m3)</SortableTableHead>
+                  <SortableTableHead sort={wellSort} sortKey="gasProd5Yr" onSort={toggleWellSort} className="h-8 text-xs text-right sticky top-0 bg-card">5yr Gas (000 m3)</SortableTableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {wells.map((well) => (
+                {sortedWells.map((well) => (
                   <TableRow key={well.waNum} className="border-border/30 hover:bg-muted/50">
                     <TableCell className="py-1.5">
                       <Link to={`/wells/${well.waNum}`} className="font-medium text-primary hover:underline">
@@ -598,10 +633,10 @@ function OperatorDetailView({
                       {well.wellName ?? "—"}
                     </TableCell>
                     <TableCell className="py-1.5 text-sm text-muted-foreground">
-                      {well.areaDesc ?? "—"}
+                      {well.areaDesc ? <Link to={searchUrl("area", well.areaDesc)} className="text-primary hover:underline">{well.areaDesc}</Link> : "—"}
                     </TableCell>
                     <TableCell className="py-1.5 text-sm text-muted-foreground">
-                      {well.formDesc ?? "—"}
+                      {well.formDesc ? <Link to={searchUrl("formation", well.formDesc)} className="text-primary hover:underline">{well.formDesc}</Link> : "—"}
                     </TableCell>
                     <TableCell className="py-1.5">
                       {well.orientation && (

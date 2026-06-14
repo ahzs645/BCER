@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { DataDrivenPropertyValueSpecification } from "maplibre-gl";
 import { Link, useSearchParams } from "react-router-dom";
 import { Filter, ExternalLink, Flame, Layers, MapPin, Database } from "lucide-react";
 import { Map, MapClusterLayer, MapControls, MapPopup, type MapRef } from "@/components/ui/map";
@@ -30,6 +31,8 @@ interface MapFilters {
   hasAreaFormation: boolean;
   hasOperator: boolean;
 }
+
+type MapLayerMode = "production" | "operator" | "formation" | "firstProd" | "orientation";
 
 function wellHasData(p: WellProperties): boolean {
   return (
@@ -149,11 +152,15 @@ function WellPopupContent({
 function FilterPanel({
   filters,
   onChange,
+  layerMode,
+  onLayerModeChange,
   totalCount,
   filteredCount,
 }: {
   filters: MapFilters;
   onChange: (filters: MapFilters) => void;
+  layerMode: MapLayerMode;
+  onLayerModeChange: (mode: MapLayerMode) => void;
   totalCount: number;
   filteredCount: number;
 }) {
@@ -188,6 +195,22 @@ function FilterPanel({
             </div>
 
             <div className="space-y-2.5">
+              <div className="space-y-1">
+                <Label htmlFor="map-layer-mode" className="text-xs text-muted-foreground">Map layer</Label>
+                <select
+                  id="map-layer-mode"
+                  value={layerMode}
+                  onChange={(event) => onLayerModeChange(event.target.value as MapLayerMode)}
+                  className="h-8 w-full rounded-md border border-input bg-muted/50 px-2 text-xs"
+                >
+                  <option value="production">3yr gas production</option>
+                  <option value="operator">Operator groups</option>
+                  <option value="formation">Formation groups</option>
+                  <option value="firstProd">First production year</option>
+                  <option value="orientation">Horizontal / vertical</option>
+                </select>
+              </div>
+
               <div className="flex items-center justify-between gap-3">
                 <Label htmlFor="filter-data" className="flex items-center gap-2 text-xs font-normal cursor-pointer">
                   <Database className="h-3.5 w-3.5 text-cyan-400" />
@@ -258,6 +281,148 @@ function FilterPanel({
   );
 }
 
+function layerPaint(layerMode: MapLayerMode): {
+  color: DataDrivenPropertyValueSpecification<string>;
+  radius: DataDrivenPropertyValueSpecification<number>;
+  legend: Array<{ label: string; color: string }>;
+} {
+  if (layerMode === "production") {
+    return {
+      color: [
+        "step",
+        ["coalesce", ["get", "gasProd3Yr"], 0],
+        "#64748b",
+        1,
+        "#06b6d4",
+        10000,
+        "#10b981",
+        100000,
+        "#f59e0b",
+        500000,
+        "#ef4444",
+      ],
+      radius: [
+        "interpolate",
+        ["linear"],
+        ["coalesce", ["get", "gasProd3Yr"], 0],
+        0,
+        4,
+        100000,
+        6,
+        500000,
+        9,
+        1000000,
+        12,
+      ],
+      legend: [
+        { label: "No/low gas", color: "#64748b" },
+        { label: "10k+", color: "#10b981" },
+        { label: "100k+", color: "#f59e0b" },
+        { label: "500k+", color: "#ef4444" },
+      ],
+    };
+  }
+
+  if (layerMode === "orientation") {
+    return {
+      color: ["case", ["==", ["get", "orientation"], "HZ"], "#10b981", "#06b6d4"],
+      radius: 5,
+      legend: [
+        { label: "Horizontal", color: "#10b981" },
+        { label: "Vertical/other", color: "#06b6d4" },
+      ],
+    };
+  }
+
+  if (layerMode === "firstProd") {
+    return {
+      color: [
+        "step",
+        ["/", ["coalesce", ["get", "firstProdMon"], 0], 100],
+        "#64748b",
+        2000,
+        "#06b6d4",
+        2010,
+        "#10b981",
+        2020,
+        "#f59e0b",
+        2025,
+        "#ef4444",
+      ],
+      radius: 5,
+      legend: [
+        { label: "pre-2000/unknown", color: "#64748b" },
+        { label: "2000s", color: "#06b6d4" },
+        { label: "2010s", color: "#10b981" },
+        { label: "2020+", color: "#f59e0b" },
+      ],
+    };
+  }
+
+  if (layerMode === "operator") {
+    return {
+      color: [
+        "match",
+        ["get", "operator"],
+        "Canadian Natural Resources Limited",
+        "#10b981",
+        "Tourmaline Oil Corp.",
+        "#06b6d4",
+        "ARC Resources Ltd.",
+        "#f59e0b",
+        "Ovintiv Canada ULC",
+        "#ef4444",
+        "#8b5cf6",
+      ],
+      radius: 5,
+      legend: [
+        { label: "CNRL", color: "#10b981" },
+        { label: "Tourmaline", color: "#06b6d4" },
+        { label: "ARC", color: "#f59e0b" },
+        { label: "Other", color: "#8b5cf6" },
+      ],
+    };
+  }
+
+  return {
+    color: [
+      "match",
+      ["get", "formDesc"],
+      "MONTNEY",
+      "#10b981",
+      "SLAVE POINT",
+      "#06b6d4",
+      "PARDONET-BALDONNEL",
+      "#f59e0b",
+      "BLUESKY",
+      "#ef4444",
+      "#8b5cf6",
+    ],
+    radius: 5,
+    legend: [
+      { label: "Montney", color: "#10b981" },
+      { label: "Slave Point", color: "#06b6d4" },
+      { label: "Pardonet", color: "#f59e0b" },
+      { label: "Other", color: "#8b5cf6" },
+    ],
+  };
+}
+
+function LayerLegend({ items }: { items: Array<{ label: string; color: string }> }) {
+  return (
+    <div className="absolute bottom-3 left-3 z-10 rounded-md border border-border bg-background/90 p-2 shadow-sm backdrop-blur-sm">
+      <div className="grid gap-1">
+        {items.map((item) => (
+          <div key={item.label} className="flex items-center gap-2 text-[10px] text-muted-foreground">
+            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+            {item.label}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function MapPage() {
   const mapRef = useRef<MapRef>(null);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -274,6 +439,7 @@ export function MapPage() {
     hasAreaFormation: false,
     hasOperator: false,
   });
+  const [layerMode, setLayerMode] = useState<MapLayerMode>("production");
 
   const selectedWa = searchParams.get("well");
 
@@ -281,6 +447,7 @@ export function MapPage() {
     if (!geoData) return null;
     return filterGeoData(geoData, filters);
   }, [geoData, filters]);
+  const paint = useMemo(() => layerPaint(layerMode), [layerMode]);
 
   useEffect(() => {
     fetchWellGeoJson()
@@ -364,9 +531,12 @@ export function MapPage() {
             <FilterPanel
               filters={filters}
               onChange={setFilters}
+              layerMode={layerMode}
+              onLayerModeChange={setLayerMode}
               totalCount={geoData?.features.length ?? 0}
               filteredCount={filteredData?.features.length ?? 0}
             />
+            <LayerLegend items={paint.legend} />
 
             {filteredData && (
               <MapClusterLayer<WellProperties>
@@ -375,7 +545,8 @@ export function MapPage() {
                 clusterMaxZoom={12}
                 clusterColors={["#06b6d4", "#10b981", "#f59e0b"]}
                 clusterThresholds={[200, 2000]}
-                pointColor="#06b6d4"
+                pointColor={paint.color}
+                pointRadius={paint.radius}
                 onPointClick={handlePointClick}
               />
             )}

@@ -3,8 +3,9 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Printer } from "lucide-react";
 import { DataTable } from "@/components/DataTable";
 import { ProductionCharts } from "@/components/ProductionCharts";
+import { WellAnalytics } from "@/components/WellAnalytics";
 import { StatCard } from "@/components/StatCard";
-import { fetchWellDetail, fetchSourceMeta } from "@/lib/api";
+import { fetchAllWells, fetchProductionExplorer, fetchWellDetail, fetchSourceMeta } from "@/lib/api";
 import { useGasUnit } from "@/lib/use-gas-unit";
 import { formatLatLon, formatMonthCode, formatNumber } from "@/lib/format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,8 +21,10 @@ import type {
   KeyValueRow,
   LiquidUnitOption,
   ProductionSeriesPoint,
+  ProductionExplorerData,
   SourceMeta,
   WellDetail,
+  WellSearchResult,
 } from "@/types";
 
 const gasUnitLabels: Record<GasUnitOption, string> = {
@@ -311,6 +314,8 @@ export function WellDetailPage() {
   const { waNum = "" } = useParams();
   const [detail, setDetail] = useState<WellDetail | null>(null);
   const [meta, setMeta] = useState<SourceMeta | null>(null);
+  const [allWells, setAllWells] = useState<WellSearchResult[]>([]);
+  const [productionExplorer, setProductionExplorer] = useState<ProductionExplorerData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [unit, setUnit] = useGasUnit();
@@ -329,8 +334,18 @@ export function WellDetailPage() {
       setLoading(true);
       setError(null);
       try {
-        const [wellDetail, sourceMeta] = await Promise.all([fetchWellDetail(waNum), fetchSourceMeta()]);
-        if (!cancelled) { setDetail(wellDetail); setMeta(sourceMeta); }
+        const [wellDetail, sourceMeta, wells, explorer] = await Promise.all([
+          fetchWellDetail(waNum),
+          fetchSourceMeta(),
+          fetchAllWells(),
+          fetchProductionExplorer(),
+        ]);
+        if (!cancelled) {
+          setDetail(wellDetail);
+          setMeta(sourceMeta);
+          setAllWells(wells);
+          setProductionExplorer(explorer);
+        }
       } catch (loadError) {
         if (!cancelled) setError(loadError instanceof Error ? loadError.message : "Unable to load well detail.");
       } finally {
@@ -622,6 +637,11 @@ export function WellDetailPage() {
               <div>
                 <h3 className="mb-3 text-sm font-medium">Production Graphs</h3>
                 <ProductionCharts detail={detail} unit={unit} />
+              </div>
+
+              <div>
+                <h3 className="mb-3 text-sm font-medium">Peer Analytics</h3>
+                <WellAnalytics detail={detail} allWells={allWells} productionExplorer={productionExplorer} />
               </div>
             </TabsContent>
 

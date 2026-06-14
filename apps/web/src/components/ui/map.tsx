@@ -1,4 +1,4 @@
-import MapLibreGL, { type PopupOptions } from "maplibre-gl";
+import MapLibreGL, { type DataDrivenPropertyValueSpecification, type PopupOptions } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import {
   createContext,
@@ -258,7 +258,8 @@ type MapClusterLayerProps<P extends GeoJSON.GeoJsonProperties = GeoJSON.GeoJsonP
   clusterRadius?: number;
   clusterColors?: [string, string, string];
   clusterThresholds?: [number, number];
-  pointColor?: string;
+  pointColor?: DataDrivenPropertyValueSpecification<string>;
+  pointRadius?: DataDrivenPropertyValueSpecification<number>;
   onPointClick?: (feature: GeoJSON.Feature<GeoJSON.Point, P>, coordinates: [number, number]) => void;
 };
 
@@ -269,6 +270,7 @@ function MapClusterLayer<P extends GeoJSON.GeoJsonProperties = GeoJSON.GeoJsonPr
   clusterColors = ["#06b6d4", "#10b981", "#f59e0b"],
   clusterThresholds = [100, 750],
   pointColor = "#06b6d4",
+  pointRadius = 5,
   onPointClick,
 }: MapClusterLayerProps<P>) {
   const { map, isLoaded } = useMap();
@@ -323,7 +325,7 @@ function MapClusterLayer<P extends GeoJSON.GeoJsonProperties = GeoJSON.GeoJsonPr
       type: "circle",
       source: sourceId,
       filter: ["!", ["has", "point_count"]],
-      paint: { "circle-color": pointColor, "circle-radius": 5, "circle-opacity": 0.9 },
+      paint: { "circle-color": pointColor, "circle-radius": pointRadius, "circle-opacity": 0.9 },
     });
 
     return () => {
@@ -342,6 +344,12 @@ function MapClusterLayer<P extends GeoJSON.GeoJsonProperties = GeoJSON.GeoJsonPr
     const source = map.getSource(sourceId) as MapLibreGL.GeoJSONSource;
     if (source) source.setData(data);
   }, [isLoaded, map, data, sourceId]);
+
+  useEffect(() => {
+    if (!isLoaded || !map || !map.getLayer(unclusteredLayerId)) return;
+    map.setPaintProperty(unclusteredLayerId, "circle-color", pointColor);
+    map.setPaintProperty(unclusteredLayerId, "circle-radius", pointRadius);
+  }, [isLoaded, map, pointColor, pointRadius, unclusteredLayerId]);
 
   useEffect(() => {
     if (!isLoaded || !map) return;

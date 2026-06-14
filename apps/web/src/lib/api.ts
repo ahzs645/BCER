@@ -7,6 +7,7 @@ import type {
   SearchResponse,
   SourceMeta,
   WellDetail,
+  WellSearchResult,
 } from "../types";
 import {
   clientSearch,
@@ -40,6 +41,10 @@ export async function fetchWellSearch(
 ): Promise<SearchResponse> {
   const wells = await loadSearchIndex();
   return clientSearch(wells, filters);
+}
+
+export function fetchAllWells(): Promise<WellSearchResult[]> {
+  return loadSearchIndex();
 }
 
 export async function fetchWellDetail(waNum: string): Promise<WellDetail> {

@@ -157,6 +157,67 @@ beforeEach(() => {
         return Promise.resolve(new Response(JSON.stringify(meta)));
       }
 
+      if (url.includes("/data/wells/search.json")) {
+        return Promise.resolve(new Response(JSON.stringify([
+          {
+            waNum: 49886,
+            wellName: "TOURMALINE HZ TEST WELL",
+            operator: "TOURMALINE OIL CORP.",
+            operatorId: 831,
+            operatorAbbr: "TOURMALINE",
+            uwiList: ["207B090A094B1600"],
+            areaCode: 94,
+            areaDesc: "Town",
+            formCode: 1600,
+            formDesc: "Montney",
+            spudMon: 202403,
+            rigRelMon: 202404,
+            firstProdMon: 202404,
+            orientation: "HZ",
+            surfLat: 56.12345,
+            surfLon: -121.54321,
+            gasProd3Yr: 123456.7,
+            gasProd5Yr: 123456.7,
+          },
+          {
+            waNum: 49887,
+            wellName: "PEER WELL",
+            operator: "TOURMALINE OIL CORP.",
+            operatorId: 831,
+            operatorAbbr: "TOURMALINE",
+            uwiList: [],
+            areaCode: 94,
+            areaDesc: "Town",
+            formCode: 1600,
+            formDesc: "Montney",
+            spudMon: 202301,
+            rigRelMon: 202302,
+            firstProdMon: 202303,
+            orientation: "HZ",
+            surfLat: 56,
+            surfLon: -121,
+            gasProd3Yr: 100000,
+            gasProd5Yr: 150000,
+          },
+        ])));
+      }
+
+      if (url.includes("/data/production-explorer.json")) {
+        return Promise.resolve(new Response(JSON.stringify({
+          fiscalYears: [2024],
+          wells: [
+            {
+              operatorId: 831,
+              operator: "TOURMALINE OIL CORP.",
+              areaDesc: "Town",
+              formDesc: "Montney",
+              orientation: "HZ",
+              production: [100, 90, 80, 70, 60, 50, 45, 40, 35, 30, 25, 20],
+            },
+          ],
+        })));
+      }
+
       if (url.includes("/data/wells/detail/manifest.json")) {
         return Promise.resolve(
           new Response(JSON.stringify({ batches: [{ index: 1, minWa: 49886, maxWa: 49886 }] })),

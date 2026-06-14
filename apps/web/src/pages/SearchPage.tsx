@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useState } from "react";
+import { startTransition, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Download, Filter, X } from "lucide-react";
 import { fetchSourceMeta, fetchWellSearch } from "@/lib/api";
@@ -24,9 +24,12 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SortableTableHead } from "@/components/SortableTableHead";
+import { useSortableRows } from "@/lib/table-sort";
 
 const DEFAULT_SORT = "high3YrProd";
 const DEFAULT_PAGE_SIZE = "25";
+const resultColumns = ["waNum", "wellName", "operator", "areaDesc", "firstProdMon", "orientation", "surfLat", "gasProd3Yr", "gasProd5Yr"] as const;
 
 const initialState = {
   waNum: "",
@@ -122,6 +125,13 @@ function resultWindowLabel(results: SearchResponse | null) {
   return `Wells ${start}\u2013${end}`;
 }
 
+function searchUrl(key: string, value: string | number | null | undefined) {
+  if (value === null || value === undefined || value === "") return "/search";
+  const params = new URLSearchParams();
+  params.set(key, String(value));
+  return `/search?${params.toString()}`;
+}
+
 export function SearchPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -136,6 +146,13 @@ export function SearchPage() {
     () => typeof window === "undefined" || window.innerWidth >= 1024,
   );
   const searchKey = searchParams.toString();
+  const getResultSortValue = useCallback((item: SearchResponse["items"][number], key: (typeof resultColumns)[number]) => item[key], []);
+  const { sortedRows: sortedResults, sort: resultSort, toggleSort: toggleResultSort } = useSortableRows(
+    results?.items ?? [],
+    resultColumns,
+    getResultSortValue,
+    { key: "gasProd3Yr", direction: "desc" },
+  );
 
   useEffect(() => {
     setFilters(paramsToState(searchParams));
@@ -388,7 +405,7 @@ export function SearchPage() {
             {!loading && !error && results && results.items.length > 0 && (
               <>
                 <div className="space-y-3 md:hidden">
-                  {results.items.map((item) => (
+                  {sortedResults.map((item) => (
                     <div key={item.waNum} className="rounded-lg border border-border/50 bg-muted/10 p-3">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
@@ -398,9 +415,15 @@ export function SearchPage() {
                           <p className="mt-1 break-words text-sm font-medium [overflow-wrap:anywhere]">
                             {item.wellName ?? "Unnamed well"}
                           </p>
-                          <p className="mt-1 break-words text-xs text-muted-foreground [overflow-wrap:anywhere]">
-                            {item.operator ?? "No operator"}{item.operatorAbbr ? ` · ${item.operatorAbbr.trim()}` : ""}
-                          </p>
+                          {item.operator && item.operatorId ? (
+                            <Link to={`/operators?id=${item.operatorId}`} className="mt-1 block break-words text-xs font-medium text-primary hover:underline [overflow-wrap:anywhere]">
+                              {item.operator}{item.operatorAbbr ? ` · ${item.operatorAbbr.trim()}` : ""}
+                            </Link>
+                          ) : (
+                            <p className="mt-1 break-words text-xs text-muted-foreground [overflow-wrap:anywhere]">
+                              {item.operator ?? "No operator"}{item.operatorAbbr ? ` · ${item.operatorAbbr.trim()}` : ""}
+                            </p>
+                          )}
                         </div>
                         <Badge variant="outline" className="shrink-0 text-[10px]">
                           {item.orientation ?? "VERT"}
@@ -410,7 +433,8 @@ export function SearchPage() {
                         <div>
                           <dt className="text-xs text-muted-foreground">Area / Formation</dt>
                           <dd className="break-words font-medium [overflow-wrap:anywhere]">
-                            {item.areaDesc ?? "—"} / {item.formDesc ?? "—"}
+                            {item.areaDesc ? <Link to={searchUrl("area", item.areaDesc)} className="text-primary hover:underline">{item.areaDesc}</Link> : "—"} /{" "}
+                            {item.formDesc ? <Link to={searchUrl("formation", item.formDesc)} className="text-primary hover:underline">{item.formDesc}</Link> : "—"}
                           </dd>
                         </div>
                         <div>
@@ -434,19 +458,19 @@ export function SearchPage() {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-border/50 hover:bg-transparent">
-                        <TableHead className="text-xs">WA</TableHead>
-                        <TableHead className="text-xs">Well Name</TableHead>
-                        <TableHead className="text-xs">Operator</TableHead>
-                        <TableHead className="text-xs">Area / Formation</TableHead>
-                        <TableHead className="text-xs">Dates</TableHead>
-                        <TableHead className="text-xs">Orient.</TableHead>
-                        <TableHead className="text-xs">Coordinates</TableHead>
-                        <TableHead className="text-xs text-right">3yr Gas (000 m3)</TableHead>
-                        <TableHead className="text-xs text-right">5yr Gas (000 m3)</TableHead>
+                        <SortableTableHead sort={resultSort} sortKey="waNum" onSort={toggleResultSort}>WA</SortableTableHead>
+                        <SortableTableHead sort={resultSort} sortKey="wellName" onSort={toggleResultSort}>Well Name</SortableTableHead>
+                        <SortableTableHead sort={resultSort} sortKey="operator" onSort={toggleResultSort}>Operator</SortableTableHead>
+                        <SortableTableHead sort={resultSort} sortKey="areaDesc" onSort={toggleResultSort}>Area / Formation</SortableTableHead>
+                        <SortableTableHead sort={resultSort} sortKey="firstProdMon" onSort={toggleResultSort}>Dates</SortableTableHead>
+                        <SortableTableHead sort={resultSort} sortKey="orientation" onSort={toggleResultSort}>Orient.</SortableTableHead>
+                        <SortableTableHead sort={resultSort} sortKey="surfLat" onSort={toggleResultSort}>Coordinates</SortableTableHead>
+                        <SortableTableHead sort={resultSort} sortKey="gasProd3Yr" onSort={toggleResultSort} className="text-xs text-right">3yr Gas (000 m3)</SortableTableHead>
+                        <SortableTableHead sort={resultSort} sortKey="gasProd5Yr" onSort={toggleResultSort} className="text-xs text-right">5yr Gas (000 m3)</SortableTableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {results.items.map((item) => (
+                      {sortedResults.map((item) => (
                         <TableRow key={item.waNum} className="border-border/30 hover:bg-muted/30">
                           <TableCell className="py-2">
                             <Link to={`/wells/${item.waNum}`} className="font-semibold text-primary hover:underline">
@@ -455,15 +479,27 @@ export function SearchPage() {
                           </TableCell>
                           <TableCell className="py-2 text-sm">{item.wellName ?? "—"}</TableCell>
                           <TableCell className="py-2">
-                            <div className="text-sm font-medium">{item.operator ?? "—"}</div>
+                            <div className="text-sm font-medium">
+                              {item.operator && item.operatorId ? (
+                                <Link to={`/operators?id=${item.operatorId}`} className="text-primary hover:underline">
+                                  {item.operator}
+                                </Link>
+                              ) : (
+                                item.operator ?? "—"
+                              )}
+                            </div>
                             <div className="text-xs text-muted-foreground">
                               {item.operatorId ? `ID ${item.operatorId}` : ""}
                               {item.operatorAbbr ? ` · ${item.operatorAbbr.trim()}` : ""}
                             </div>
                           </TableCell>
                           <TableCell className="py-2">
-                            <div className="text-sm font-medium">{item.areaDesc ?? "—"}</div>
-                            <div className="text-xs text-muted-foreground">{item.formDesc ?? "—"}</div>
+                            <div className="text-sm font-medium">
+                              {item.areaDesc ? <Link to={searchUrl("area", item.areaDesc)} className="text-primary hover:underline">{item.areaDesc}</Link> : "—"}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {item.formDesc ? <Link to={searchUrl("formation", item.formDesc)} className="text-primary hover:underline">{item.formDesc}</Link> : "—"}
+                            </div>
                           </TableCell>
                           <TableCell className="py-2">
                             <div className="text-xs">Spud {formatMonthCode(item.spudMon)}</div>
