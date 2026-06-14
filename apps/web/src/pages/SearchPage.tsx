@@ -1,7 +1,8 @@
 import { startTransition, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Filter, X } from "lucide-react";
+import { Download, Filter, X } from "lucide-react";
 import { fetchSourceMeta, fetchWellSearch } from "@/lib/api";
+import { downloadCsv } from "@/lib/export";
 import { formatLatLon, formatMonthCode, formatNumber } from "@/lib/format";
 import type { SearchResponse, SourceMeta } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -129,7 +130,11 @@ export function SearchPage() {
   const [results, setResults] = useState<SearchResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filtersOpen, setFiltersOpen] = useState(true);
+  // Collapse the filter panel by default on small screens so results aren't
+  // pushed below a full screen of inputs.
+  const [filtersOpen, setFiltersOpen] = useState(
+    () => typeof window === "undefined" || window.innerWidth >= 1024,
+  );
   const searchKey = searchParams.toString();
 
   useEffect(() => {
@@ -194,6 +199,27 @@ export function SearchPage() {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("page", String(page));
     startTransition(() => { setSearchParams(nextParams); });
+  }
+
+  function exportResults() {
+    if (!results || results.items.length === 0) return;
+    const rows = results.items.map((item) => ({
+      wa_num: item.waNum,
+      well_name: item.wellName,
+      operator: item.operator,
+      operator_id: item.operatorId,
+      area: item.areaDesc,
+      formation: item.formDesc,
+      spud_mon: item.spudMon,
+      rig_rel_mon: item.rigRelMon,
+      first_prod_mon: item.firstProdMon,
+      orientation: item.orientation,
+      surf_lat: item.surfLat,
+      surf_lon: item.surfLon,
+      gas_prod_3yr: item.gasProd3Yr,
+      gas_prod_5yr: item.gasProd5Yr,
+    }));
+    downloadCsv(`bcer-search-page-${results.page}.csv`, rows);
   }
 
   return (
@@ -316,9 +342,22 @@ export function SearchPage() {
               <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
                 Results
               </CardTitle>
-              <Badge variant="secondary" className="text-xs">
-                {resultWindowLabel(results)}
-              </Badge>
+              <div className="flex items-center gap-2">
+                {results && results.items.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={exportResults}
+                    className="h-7 gap-1.5 text-xs text-muted-foreground"
+                  >
+                    <Download className="h-3 w-3" />
+                    CSV
+                  </Button>
+                )}
+                <Badge variant="secondary" className="text-xs">
+                  {resultWindowLabel(results)}
+                </Badge>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="pt-0">

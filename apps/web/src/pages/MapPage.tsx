@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Filter, ExternalLink, Flame, Layers, MapPin, Database } from "lucide-react";
 import { Map, MapClusterLayer, MapControls, MapPopup, type MapRef } from "@/components/ui/map";
 import { BC_CENTER, BC_DEFAULT_ZOOM } from "@/components/ui/map-styles";
@@ -260,6 +260,7 @@ function FilterPanel({
 
 export function MapPage() {
   const mapRef = useRef<MapRef>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [geoData, setGeoData] = useState<GeoJSON.FeatureCollection<GeoJSON.Point, WellProperties> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -274,6 +275,8 @@ export function MapPage() {
     hasOperator: false,
   });
 
+  const selectedWa = searchParams.get("well");
+
   const filteredData = useMemo(() => {
     if (!geoData) return null;
     return filterGeoData(geoData, filters);
@@ -286,16 +289,41 @@ export function MapPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Restore a well selection from the URL (?well=WA) on load or when the param
+  // changes externally, flying the map to the well and opening its popup.
+  useEffect(() => {
+    if (!geoData || !selectedWa) return;
+    if (selectedWell && String(selectedWell.properties.waNum) === selectedWa) return;
+    const wa = Number.parseInt(selectedWa, 10);
+    const feature = geoData.features.find((f) => f.properties.waNum === wa);
+    if (!feature) return;
+    const coordinates = feature.geometry.coordinates as [number, number];
+    setSelectedWell({ coordinates, properties: feature.properties });
+    mapRef.current?.easeTo({ center: coordinates, zoom: Math.max(mapRef.current.getZoom(), 9) });
+  }, [geoData, selectedWa, selectedWell]);
+
   function handlePointClick(
     feature: GeoJSON.Feature<GeoJSON.Point, WellProperties>,
     coordinates: [number, number],
   ) {
     setSelectedWell({ coordinates, properties: feature.properties });
+    const next = new URLSearchParams(searchParams);
+    next.set("well", String(feature.properties.waNum));
+    setSearchParams(next, { replace: true });
+  }
+
+  function clearSelection() {
+    setSelectedWell(null);
+    if (searchParams.has("well")) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("well");
+      setSearchParams(next, { replace: true });
+    }
   }
 
   if (loading) {
     return (
-      <div className="flex h-[calc(100vh-6rem)] flex-col gap-4">
+      <div className="flex h-[calc(100dvh-6rem)] flex-col gap-4">
         <Skeleton className="h-8 w-64" />
         <Skeleton className="flex-1 rounded-xl" />
       </div>
@@ -311,7 +339,7 @@ export function MapPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-6rem)] flex-col gap-4">
+    <div className="flex h-[calc(100dvh-6rem)] flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold font-[family-name:var(--font-heading)] tracking-tight">Well Map</h2>
@@ -356,11 +384,11 @@ export function MapPage() {
               <MapPopup
                 longitude={selectedWell.coordinates[0]}
                 latitude={selectedWell.coordinates[1]}
-                onClose={() => setSelectedWell(null)}
+                onClose={clearSelection}
               >
                 <WellPopupContent
                   properties={selectedWell.properties}
-                  onClose={() => setSelectedWell(null)}
+                  onClose={clearSelection}
                 />
               </MapPopup>
             )}

@@ -24,10 +24,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Building2, ArrowLeft, Flame, Layers, TrendingUp } from "lucide-react";
+import { Building2, ArrowLeft, Download, Flame, Layers, TrendingUp } from "lucide-react";
 import { fetchOperatorAnalytics, fetchOperatorDetail } from "@/lib/api";
 import { formatNumber } from "@/lib/format";
+import { downloadCsv, toFilenameStem } from "@/lib/export";
 import { useChartTheme } from "@/lib/chart-theme";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { OperatorAnalyticsData, OperatorDetailData, OperatorSummary } from "@/types";
 
 const BAR_COLOR = "#06b6d4";
@@ -42,6 +44,7 @@ function OperatorList({
   onSelect: (op: OperatorSummary) => void;
 }) {
   const { tooltipStyle, axisTickStyle, gridStroke } = useChartTheme();
+  const isMobile = useIsMobile();
   const [view, setView] = useState<"wells" | "production">("wells");
   const list = view === "wells" ? data.topByWellCount : data.topByProduction;
 
@@ -49,6 +52,20 @@ function OperatorList({
     name: op.operatorAbbr || op.operator.slice(0, 20),
     value: view === "wells" ? op.wellCount : op.totalGas3Yr,
   }));
+
+  function exportOperators() {
+    const rows = list.map((op) => ({
+      operator_id: op.operatorId,
+      operator: op.operator,
+      operator_abbr: op.operatorAbbr,
+      well_count: op.wellCount,
+      horizontal_count: op.horizontalCount,
+      total_gas_3yr: op.totalGas3Yr,
+      top_area: op.topArea,
+      top_formation: op.topFormation,
+    }));
+    downloadCsv("bcer-operators.csv", rows);
+  }
 
   return (
     <div className="space-y-6">
@@ -138,7 +155,7 @@ function OperatorList({
               <YAxis
                 dataKey="name"
                 type="category"
-                width={130}
+                width={isMobile ? 88 : 130}
                 tick={axisTickStyle}
               />
               <RechartsTooltip contentStyle={tooltipStyle} />
@@ -155,9 +172,15 @@ function OperatorList({
       {/* Table */}
       <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
-            All Top Operators
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+              All Top Operators
+            </CardTitle>
+            <Button variant="ghost" size="sm" onClick={exportOperators} className="h-7 gap-1.5 text-xs text-muted-foreground">
+              <Download className="h-3 w-3" />
+              CSV
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="pt-0">
           <div className="overflow-x-auto">
@@ -232,6 +255,7 @@ function OperatorDetailView({
   onBack: () => void;
 }) {
   const { tooltipStyle, axisTickStyle, gridStroke } = useChartTheme();
+  const isMobile = useIsMobile();
   const [data, setData] = useState<OperatorDetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -395,7 +419,7 @@ function OperatorDetailView({
                   <YAxis
                     dataKey="areaDesc"
                     type="category"
-                    width={100}
+                    width={isMobile ? 80 : 100}
                     tick={{ ...axisTickStyle, fontSize: 10 }}
                   />
                   <RechartsTooltip contentStyle={tooltipStyle} />
@@ -422,7 +446,7 @@ function OperatorDetailView({
                   <YAxis
                     dataKey="formDesc"
                     type="category"
-                    width={100}
+                    width={isMobile ? 80 : 100}
                     tick={{ ...axisTickStyle, fontSize: 10 }}
                   />
                   <RechartsTooltip contentStyle={tooltipStyle} />
@@ -441,6 +465,28 @@ function OperatorDetailView({
             <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
               Wells ({wells.length.toLocaleString()})
             </CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                downloadCsv(
+                  `${toFilenameStem(summary.operatorAbbr || summary.operator)}-wells.csv`,
+                  wells.map((well) => ({
+                    wa_num: well.waNum,
+                    well_name: well.wellName,
+                    area: well.areaDesc,
+                    formation: well.formDesc,
+                    orientation: well.orientation,
+                    gas_prod_3yr: well.gasProd3Yr,
+                    gas_prod_5yr: well.gasProd5Yr,
+                  })),
+                )
+              }
+              className="h-7 gap-1.5 text-xs text-muted-foreground"
+            >
+              <Download className="h-3 w-3" />
+              CSV
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="pt-0">
