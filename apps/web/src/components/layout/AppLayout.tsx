@@ -12,7 +12,9 @@ export function AppLayout() {
         <SidebarInset>
           <TopBar />
           <main className="flex-1 overflow-auto p-4 md:p-6">
-            <Outlet />
+            <div className="mx-auto w-full max-w-[1600px]">
+              <Outlet />
+            </div>
           </main>
         </SidebarInset>
       </SidebarProvider>

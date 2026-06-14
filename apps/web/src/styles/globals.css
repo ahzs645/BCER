@@ -162,3 +162,30 @@
 .bcer-map-popup .maplibregl-popup-tip {
   border-top-color: var(--map-tip);
 }
+
+/* ── Print: produce a clean single-well sheet ───────────────
+   App chrome (sidebar/top bar) is hidden via print:hidden; here we
+   neutralize scroll containers and force backgrounds so charts and
+   tables render in full when printing a well detail page. */
+@media print {
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  main {
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  /* Let tall content flow across pages instead of clipping to viewport height. */
+  [data-slot="sidebar-inset"] {
+    overflow: visible !important;
+  }
+
+  .glow-card,
+  .glow-card-strong,
+  .glow-primary {
+    box-shadow: none !important;
+  }
+}

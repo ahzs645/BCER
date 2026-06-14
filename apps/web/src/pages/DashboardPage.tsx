@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { fetchDashboard, fetchAggregateProduction } from "@/lib/api";
 import { formatNumber } from "@/lib/format";
 import { useChartTheme } from "@/lib/chart-theme";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { ProductionExplorer } from "@/components/dashboard/ProductionExplorer";
 import type { AggregateProductionData, DashboardData } from "@/types";
 
@@ -54,6 +55,8 @@ function formatPeriod(period: number | null): string {
 
 export function DashboardPage() {
   const { tooltipStyle, axisTickStyle, gridStroke } = useChartTheme();
+  const isMobile = useIsMobile();
+  const categoryAxisWidth = isMobile ? 80 : 120;
   const [data, setData] = useState<DashboardData | null>(null);
   const [prodData, setProdData] = useState<AggregateProductionData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -324,7 +327,7 @@ export function DashboardPage() {
                 <YAxis
                   dataKey="areaDesc"
                   type="category"
-                  width={120}
+                  width={categoryAxisWidth}
                   tick={axisTickStyle}
                 />
                 <RechartsTooltip contentStyle={tooltipStyle} />
@@ -348,7 +351,7 @@ export function DashboardPage() {
                 <YAxis
                   dataKey="formDesc"
                   type="category"
-                  width={120}
+                  width={categoryAxisWidth}
                   tick={axisTickStyle}
                 />
                 <RechartsTooltip contentStyle={tooltipStyle} />

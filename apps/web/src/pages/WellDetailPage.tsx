@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Printer } from "lucide-react";
 import { DataTable } from "@/components/DataTable";
 import { ProductionCharts } from "@/components/ProductionCharts";
 import { StatCard } from "@/components/StatCard";
 import { fetchWellDetail, fetchSourceMeta } from "@/lib/api";
+import { useGasUnit } from "@/lib/use-gas-unit";
 import { formatLatLon, formatMonthCode, formatNumber } from "@/lib/format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -299,14 +300,13 @@ export function WellDetailPage() {
   const [meta, setMeta] = useState<SourceMeta | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [unit, setUnit] = useState<GasUnitOption>("km3");
+  const [unit, setUnit] = useGasUnit();
   const [fracBlock, setFracBlock] = useState("0");
   const [casingBlock, setCasingBlock] = useState("last");
   const [abandonmentBlock, setAbandonmentBlock] = useState("0");
 
   useEffect(() => {
     let cancelled = false;
-    setUnit("km3");
     setFracBlock("0");
     setCasingBlock("last");
     setAbandonmentBlock("0");
@@ -411,10 +411,16 @@ export function WellDetailPage() {
 
   return (
     <div className="space-y-4">
-      {/* Back link */}
-      <Button variant="ghost" size="sm" asChild className="text-primary">
-        <Link to="/search"><ArrowLeft className="mr-1.5 h-3.5 w-3.5" />Back to search</Link>
-      </Button>
+      {/* Back link + print */}
+      <div className="flex items-center justify-between print:hidden">
+        <Button variant="ghost" size="sm" asChild className="text-primary">
+          <Link to="/search"><ArrowLeft className="mr-1.5 h-3.5 w-3.5" />Back to search</Link>
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => window.print()} className="gap-1.5">
+          <Printer className="h-3.5 w-3.5" />
+          Print
+        </Button>
+      </div>
 
       {/* Hero */}
       <Card className="glow-card-strong border-border/50 bg-card/80 backdrop-blur-sm">
@@ -480,7 +486,8 @@ export function WellDetailPage() {
         </CardHeader>
         <CardContent className="pt-0">
           <Tabs defaultValue="overview">
-            <TabsList className="mb-4 flex-wrap h-auto gap-1 bg-muted/30 p-1">
+            <TabsList className="mb-4 h-auto w-full justify-start gap-1 overflow-x-auto bg-muted/30 p-1 [&>button]:flex-none [&>button]:py-1.5">
+
               <TabsTrigger value="overview">Summary</TabsTrigger>
               <TabsTrigger value="production">Production</TabsTrigger>
               <TabsTrigger value="fracs">Fracs</TabsTrigger>
@@ -590,17 +597,6 @@ export function WellDetailPage() {
                 <h3 className="mb-3 text-sm font-medium">Production Graphs</h3>
                 <ProductionCharts detail={detail} unit={unit} />
               </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <Card className="border-border/30 bg-card/40">
-                  <CardHeader className="pb-2"><CardTitle className="text-sm">Directional Survey</CardTitle></CardHeader>
-                  <CardContent className="pt-0"><DataTable rows={detail.directionalSurvey} emptyMessage="No directional survey rows." /></CardContent>
-                </Card>
-                <Card className="border-border/30 bg-card/40 md:col-span-2">
-                  <CardHeader className="pb-2"><CardTitle className="text-sm">Drilling Events</CardTitle></CardHeader>
-                  <CardContent className="pt-0"><DataTable rows={detail.drillingEvents} emptyMessage="No drilling event rows." /></CardContent>
-                </Card>
-              </div>
             </TabsContent>
 
             <TabsContent value="production" className="space-y-4">
@@ -615,7 +611,7 @@ export function WellDetailPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <DataTable rows={firstMonthDetailRows} emptyMessage="No monthly production rows." />
+                  <DataTable rows={firstMonthDetailRows} emptyMessage="No monthly production rows." exportName={`well-${detail.overview.waNum}-monthly-production`} />
                 </CardContent>
               </Card>
               <div className="grid gap-4 md:grid-cols-2">
@@ -626,7 +622,7 @@ export function WellDetailPage() {
                       <span className="text-xs text-muted-foreground">Gas {gasUnitLabels[unit]} · Liquids {liquids}</span>
                     </div>
                   </CardHeader>
-                  <CardContent className="pt-0"><DataTable rows={fiscalYearRows} emptyMessage="No fiscal-year production rows." /></CardContent>
+                  <CardContent className="pt-0"><DataTable rows={fiscalYearRows} emptyMessage="No fiscal-year production rows." exportName={`well-${detail.overview.waNum}-fiscal-year`} /></CardContent>
                 </Card>
                 <Card className="border-border/30 bg-card/40">
                   <CardHeader className="pb-2">
@@ -635,7 +631,7 @@ export function WellDetailPage() {
                       <span className="text-xs text-muted-foreground">{gasUnitLabels[unit]}</span>
                     </div>
                   </CardHeader>
-                  <CardContent className="pt-0"><DataTable rows={calendarYearRows} emptyMessage="No calendar-year production rows." /></CardContent>
+                  <CardContent className="pt-0"><DataTable rows={calendarYearRows} emptyMessage="No calendar-year production rows." exportName={`well-${detail.overview.waNum}-calendar-year`} /></CardContent>
                 </Card>
               </div>
             </TabsContent>
@@ -660,7 +656,7 @@ export function WellDetailPage() {
               <Card className="border-border/30 bg-card/40">
                 <CardHeader className="pb-2"><CardTitle className="text-sm">Gas Analysis</CardTitle></CardHeader>
                 <CardContent className="pt-0">
-                  <DataTable rows={buildFullGasRows(detail.gasAnalysis)} labels={gasAnalysisLabels} emptyMessage="No gas analysis rows." />
+                  <DataTable rows={buildFullGasRows(detail.gasAnalysis)} labels={gasAnalysisLabels} emptyMessage="No gas analysis rows." exportName={`well-${detail.overview.waNum}-gas-analysis`} />
                 </CardContent>
               </Card>
             </TabsContent>
