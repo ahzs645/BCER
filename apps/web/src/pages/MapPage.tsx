@@ -352,8 +352,8 @@ export function MapPage() {
         </div>
       </div>
 
-      <Card className="flex-1 overflow-hidden border-border/50 bg-card/80 backdrop-blur-sm">
-        <div className="relative h-full">
+      <Card className="h-[calc(100dvh-13rem)] min-h-[520px] flex-1 overflow-hidden border-border/50 bg-card/80 py-0 backdrop-blur-sm">
+        <div className="relative min-h-0 flex-1">
           <Map
             ref={mapRef}
             center={BC_CENTER}

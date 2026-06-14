@@ -88,6 +88,22 @@ const Map = forwardRef<MapRef, MapProps>(function Map({ children, ...props }, re
     mapInstance.setStyle(MAP_STYLES[theme]);
   }, [theme, mapInstance]);
 
+  useEffect(() => {
+    if (!mapInstance || !containerRef.current) return;
+
+    const resize = () => mapInstance.resize();
+    const frame = requestAnimationFrame(resize);
+    const observer = new ResizeObserver(resize);
+    observer.observe(containerRef.current);
+    window.addEventListener("resize", resize);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener("resize", resize);
+    };
+  }, [mapInstance]);
+
   const isLoading = !isLoaded || !isStyleLoaded;
 
   const contextValue = useMemo(
@@ -97,7 +113,11 @@ const Map = forwardRef<MapRef, MapProps>(function Map({ children, ...props }, re
 
   return (
     <MapContext.Provider value={contextValue}>
-      <div ref={containerRef} className="relative h-full w-full">
+      <div
+        ref={containerRef}
+        className="w-full overflow-hidden"
+        style={{ position: "absolute", inset: 0, minHeight: 320, height: "100%" }}
+      >
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="flex gap-1">
