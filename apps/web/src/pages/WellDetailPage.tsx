@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Printer } from "lucide-react";
 import { DataTable } from "@/components/DataTable";
@@ -67,6 +67,17 @@ const recordBlocks = [
   { value: "5", label: "6-10", start: 5 },
   { value: "10", label: "11-15", start: 10 },
   { value: "15", label: "16-20", start: 15 },
+] as const;
+
+const detailTabs = [
+  { value: "overview", label: "Overview" },
+  { value: "production", label: "Production" },
+  { value: "fracs", label: "Completions" },
+  { value: "gas", label: "Gas Analysis" },
+  { value: "drilling", label: "Drilling" },
+  { value: "casings", label: "Casings" },
+  { value: "payZones", label: "Pay Zones" },
+  { value: "abandonment", label: "Abandonment" },
 ] as const;
 
 function liquidUnit(unit: GasUnitOption): LiquidUnitOption {
@@ -165,15 +176,17 @@ function sliceRecordBlock<T>(rows: T[], block: string) {
 function BlockSelector({ label, rowCount, value, onChange, includeLast = false }: {
   label: string; rowCount: number; value: string; onChange: (v: string) => void; includeLast?: boolean;
 }) {
+  const id = useId();
   const options = recordBlockOptions(rowCount, includeLast);
   if (options.length <= 1) return null;
   return (
     <div className="flex items-center gap-2">
-      <Label className="text-xs text-muted-foreground">{label}</Label>
+      <Label htmlFor={id} className="text-xs text-muted-foreground">{label}</Label>
       <select
+        id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-7 rounded-md border border-input bg-muted/50 px-2 text-xs"
+        className="h-10 rounded-md border border-input bg-muted/50 px-2 text-xs sm:h-7"
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -301,6 +314,7 @@ export function WellDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [unit, setUnit] = useGasUnit();
+  const [activeTab, setActiveTab] = useState<(typeof detailTabs)[number]["value"]>("overview");
   const [fracBlock, setFracBlock] = useState("0");
   const [casingBlock, setCasingBlock] = useState("last");
   const [abandonmentBlock, setAbandonmentBlock] = useState("0");
@@ -442,7 +456,9 @@ export function WellDetailPage() {
           <div className="flex flex-wrap gap-2 sm:flex-col sm:items-end">
             <Badge variant="outline">{meta?.dataCurrentTo ?? "—"}</Badge>
             <Badge variant="outline">{detail.overview.orientation ?? "VERT"}</Badge>
-            <Badge variant={fracReported ? "default" : "outline"}>{fracReported ? "Frac'd" : "Not frac'd"}</Badge>
+            <Badge variant={fracReported ? "default" : "outline"}>
+              {fracReported ? "Fracture treatment reported" : "No fracture treatment reported"}
+            </Badge>
             <Badge variant="outline">{detail.overview.operatorAbbr?.trim() || "No abbr"}</Badge>
           </div>
         </CardContent>
@@ -450,8 +466,8 @@ export function WellDetailPage() {
 
       {/* Stat Grid */}
       <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
-        <StatCard label="3 year gas" value={formatNumber(detail.overview.gasProd3Yr, 1)} />
-        <StatCard label="5 year gas" value={formatNumber(detail.overview.gasProd5Yr, 1)} />
+        <StatCard label="3 year gas (000 m3)" value={formatNumber(detail.overview.gasProd3Yr, 1)} />
+        <StatCard label="5 year gas (000 m3)" value={formatNumber(detail.overview.gasProd5Yr, 1)} />
         <StatCard label="Spud month" value={formatMonthCode(detail.overview.spudMon)} />
         <StatCard label="Rig release" value={formatMonthCode(detail.overview.rigRelMon)} />
         <StatCard label="First production" value={formatMonthCode(detail.overview.firstProdMon)} />
@@ -466,15 +482,16 @@ export function WellDetailPage() {
         <CardHeader className="pb-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.12em] text-primary/70">Workbook Subsheets</p>
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-primary/70">Well Detail Sections</p>
               <CardTitle className="mt-1 text-base">Selected well detail</CardTitle>
             </div>
             <div className="flex items-center gap-2">
-              <Label className="text-xs text-muted-foreground">Gas units</Label>
+              <Label htmlFor="well-gas-unit" className="text-xs text-muted-foreground">Gas units</Label>
               <select
+                id="well-gas-unit"
                 value={unit}
                 onChange={(e) => setUnit(e.target.value as GasUnitOption)}
-                className="h-7 rounded-md border border-input bg-muted/50 px-2 text-xs"
+                className="h-10 rounded-md border border-input bg-muted/50 px-2 text-xs sm:h-7"
               >
                 <option value="km3">000 m3</option>
                 <option value="mcf">MCF</option>
@@ -485,17 +502,26 @@ export function WellDetailPage() {
           </div>
         </CardHeader>
         <CardContent className="pt-0">
-          <Tabs defaultValue="overview">
-            <TabsList className="mb-4 h-auto w-full justify-start gap-1 overflow-x-auto bg-muted/30 p-1 [&>button]:flex-none [&>button]:py-1.5">
-
-              <TabsTrigger value="overview">Summary</TabsTrigger>
-              <TabsTrigger value="production">Production</TabsTrigger>
-              <TabsTrigger value="fracs">Fracs</TabsTrigger>
-              <TabsTrigger value="gas">Gas Analyses</TabsTrigger>
-              <TabsTrigger value="drilling">Survey & Drilling</TabsTrigger>
-              <TabsTrigger value="casings">Casings</TabsTrigger>
-              <TabsTrigger value="payZones">Pay Zones</TabsTrigger>
-              <TabsTrigger value="abandonment">Abandonment</TabsTrigger>
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
+            <div className="mb-4 md:hidden">
+              <Label htmlFor="well-detail-section" className="mb-1 block text-xs text-muted-foreground">
+                Section
+              </Label>
+              <select
+                id="well-detail-section"
+                value={activeTab}
+                onChange={(event) => setActiveTab(event.target.value as typeof activeTab)}
+                className="h-10 w-full rounded-md border border-input bg-muted/50 px-3 text-sm"
+              >
+                {detailTabs.map((tab) => (
+                  <option key={tab.value} value={tab.value}>{tab.label}</option>
+                ))}
+              </select>
+            </div>
+            <TabsList className="mb-4 hidden h-auto w-full justify-start gap-1 overflow-x-auto bg-muted/30 p-1 md:inline-flex [&>button]:flex-none [&>button]:py-1.5">
+              {detailTabs.map((tab) => (
+                <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
+              ))}
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4">

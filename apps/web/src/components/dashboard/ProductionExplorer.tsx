@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -268,15 +268,17 @@ function FilterSelect({
   displayLabels?: Record<string, string>;
   onChange: (value: string) => void;
 }) {
+  const id = useId();
   return (
     <div className="space-y-1">
-      <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+      <label htmlFor={id} className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
         {label}
       </label>
       <select
+        id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+        className="min-h-10 w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:min-h-0"
       >
         <option value="">All</option>
         {options.map((opt) => (

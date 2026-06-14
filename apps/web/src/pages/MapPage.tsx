@@ -67,7 +67,7 @@ function WellPopupContent({
   const hasGas = p.gasProd3Yr > 0;
 
   return (
-    <div className="w-[240px]">
+    <div className="w-[min(240px,calc(100vw-3rem))]">
       {/* Header */}
       <div className="flex items-start justify-between gap-2 pb-2">
         <div className="min-w-0">
@@ -86,7 +86,7 @@ function WellPopupContent({
         <button
           type="button"
           onClick={onClose}
-          className="mt-0.5 shrink-0 rounded-sm p-0.5 text-muted-foreground/70 transition-colors hover:text-foreground"
+          className="mt-0.5 flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-sm text-muted-foreground/70 transition-colors hover:text-foreground sm:min-h-6 sm:min-w-6"
           aria-label="Close"
         >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -136,7 +136,7 @@ function WellPopupContent({
       <div className="mt-2 border-t border-border/40 pt-2">
         <Link
           to={`/wells/${p.waNum}`}
-          className="flex items-center justify-center gap-1.5 rounded-md bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+          className="flex min-h-10 items-center justify-center gap-1.5 rounded-md bg-primary/10 px-3 py-2 text-xs font-medium text-primary transition-colors hover:bg-primary/20 sm:min-h-0 sm:py-1.5"
         >
           View detail
           <ExternalLink className="h-3 w-3" />
@@ -178,7 +178,7 @@ function FilterPanel({
       </Button>
 
       {open && (
-        <Card className="mt-2 w-[280px] border-border/60 bg-background/95 backdrop-blur-sm shadow-lg">
+        <Card className="mt-2 w-[min(280px,calc(100vw-1.5rem))] border-border/60 bg-background/95 backdrop-blur-sm shadow-lg">
           <CardContent className="space-y-3 p-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-foreground">Filter Wells</span>
@@ -323,7 +323,7 @@ export function MapPage() {
 
   if (loading) {
     return (
-      <div className="flex h-[calc(100dvh-6rem)] flex-col gap-4">
+      <div className="flex min-h-[calc(100dvh-9rem)] flex-col gap-4 sm:min-h-[calc(100dvh-6rem)]">
         <Skeleton className="h-8 w-64" />
         <Skeleton className="flex-1 rounded-xl" />
       </div>
@@ -339,7 +339,7 @@ export function MapPage() {
   }
 
   return (
-    <div className="flex h-[calc(100dvh-6rem)] flex-col gap-4">
+    <div className="flex min-h-[calc(100dvh-9rem)] flex-col gap-4 sm:min-h-[calc(100dvh-6rem)]">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold font-[family-name:var(--font-heading)] tracking-tight">Well Map</h2>

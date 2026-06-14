@@ -61,7 +61,7 @@ export function DataTable({ rows, emptyMessage = "No rows available.", labels, e
               {columns.map((column) => (
                 <div key={column} className="contents">
                   <dt className="truncate text-xs text-muted-foreground">{headerFor(column)}</dt>
-                  <dd className="text-right text-sm font-medium tabular-nums">
+                  <dd className="min-w-0 break-words text-right text-sm font-medium tabular-nums [overflow-wrap:anywhere]">
                     {formatCellValue(column, row[column])}
                   </dd>
                 </div>

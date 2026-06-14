@@ -41,6 +41,13 @@ function liquidUnit(unit: GasUnitOption): LiquidUnitOption {
   return unit === "km3" ? "m3" : "bbl";
 }
 
+function hasValue(row: object, keys: string[]) {
+  return keys.some((key) => {
+    const value = (row as Record<string, unknown>)[key];
+    return typeof value === "number" && Number.isFinite(value);
+  });
+}
+
 export function ProductionCharts({ detail, unit }: ProductionChartsProps) {
   const { tooltipStyle, axisTickStyle, gridStroke } = useChartTheme();
   const gasKey = valueKey("gasVolume", unit);
@@ -49,19 +56,23 @@ export function ProductionCharts({ detail, unit }: ProductionChartsProps) {
   const liquids = liquidUnit(unit);
   const oilKey = liquids === "m3" ? "oilM3" : "oilBbl";
   const condensateKey = liquids === "m3" ? "condensateM3" : "condensateBbl";
+  const productionSeries = detail.productionSeries.filter((row) => hasValue(row, [gasKey, avgKey]));
+  const calendarYearSeries = detail.calendarYearSeries.filter((row) => hasValue(row, [yearlyGas]));
+  const fiscalYearGasSeries = detail.fiscalYearSeries.filter((row) => hasValue(row, [yearlyGas]));
+  const fiscalYearLiquidSeries = detail.fiscalYearSeries.filter((row) => hasValue(row, [oilKey, condensateKey]));
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <Card className="border-border/50 bg-card/60">
         <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-sm font-medium">Monthly Production</CardTitle>
             <span className="text-xs text-muted-foreground">{unitLabel[unit]}</span>
           </div>
         </CardHeader>
         <CardContent className="pt-0">
           <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={detail.productionSeries}>
+            <LineChart data={productionSeries}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
               <XAxis dataKey="periodLabel" minTickGap={30} tick={axisTickStyle} />
               <YAxis tickFormatter={(v) => formatNumber(v, 1)} tick={axisTickStyle} />
@@ -74,14 +85,14 @@ export function ProductionCharts({ detail, unit }: ProductionChartsProps) {
 
       <Card className="border-border/50 bg-card/60">
         <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-sm font-medium">Average Daily Gas</CardTitle>
             <span className="text-xs text-muted-foreground">{unitLabel[unit]}</span>
           </div>
         </CardHeader>
         <CardContent className="pt-0">
           <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={detail.productionSeries}>
+            <LineChart data={productionSeries}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
               <XAxis dataKey="periodLabel" minTickGap={30} tick={axisTickStyle} />
               <YAxis tickFormatter={(v) => formatNumber(v, 1)} tick={axisTickStyle} />
@@ -94,14 +105,14 @@ export function ProductionCharts({ detail, unit }: ProductionChartsProps) {
 
       <Card className="border-border/50 bg-card/60">
         <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-sm font-medium">Calendar Year Gas</CardTitle>
             <span className="text-xs text-muted-foreground">{unitLabel[unit]}</span>
           </div>
         </CardHeader>
         <CardContent className="pt-0">
           <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={detail.calendarYearSeries}>
+            <BarChart data={calendarYearSeries}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
               <XAxis dataKey="calendarYear" minTickGap={24} tick={axisTickStyle} />
               <YAxis tickFormatter={(v) => formatNumber(v, 1)} tick={axisTickStyle} />
@@ -114,14 +125,14 @@ export function ProductionCharts({ detail, unit }: ProductionChartsProps) {
 
       <Card className="border-border/50 bg-card/60">
         <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-sm font-medium">Fiscal Year Gas</CardTitle>
             <span className="text-xs text-muted-foreground">{unitLabel[unit]}</span>
           </div>
         </CardHeader>
         <CardContent className="pt-0">
           <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={detail.fiscalYearSeries}>
+            <BarChart data={fiscalYearGasSeries}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
               <XAxis dataKey="fiscalYear" minTickGap={24} tick={axisTickStyle} />
               <YAxis tickFormatter={(v) => formatNumber(v, 1)} tick={axisTickStyle} />
@@ -134,14 +145,14 @@ export function ProductionCharts({ detail, unit }: ProductionChartsProps) {
 
       <Card className="border-border/50 bg-card/60 md:col-span-2">
         <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-sm font-medium">Fiscal Year Liquids</CardTitle>
             <span className="text-xs text-muted-foreground">{liquids}</span>
           </div>
         </CardHeader>
         <CardContent className="pt-0">
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={detail.fiscalYearSeries}>
+            <BarChart data={fiscalYearLiquidSeries}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
               <XAxis dataKey="fiscalYear" minTickGap={24} tick={axisTickStyle} />
               <YAxis tickFormatter={(v) => formatNumber(v, 1)} tick={axisTickStyle} />

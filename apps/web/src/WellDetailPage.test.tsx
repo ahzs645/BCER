@@ -190,7 +190,7 @@ it("renders workbook-style subsheets and parity controls on the detail page", as
   );
 
   await waitFor(() => {
-    expect(screen.getByText("Workbook Subsheets")).toBeInTheDocument();
+    expect(screen.getByText("Well Detail Sections")).toBeInTheDocument();
   });
 
   expect(screen.getByText("Production Snapshot")).toBeInTheDocument();
@@ -200,7 +200,7 @@ it("renders workbook-style subsheets and parity controls on the detail page", as
   expect(screen.getByText("Liquids in m3")).toBeInTheDocument();
 
   expect(screen.getByRole("tab", { name: "Production" })).toBeInTheDocument();
-  expect(screen.getByRole("tab", { name: "Fracs" })).toBeInTheDocument();
+  expect(screen.getByRole("tab", { name: "Completions" })).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "Casings" })).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "Abandonment" })).toBeInTheDocument();
 });

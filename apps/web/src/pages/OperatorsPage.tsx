@@ -48,10 +48,13 @@ function OperatorList({
   const [view, setView] = useState<"wells" | "production">("wells");
   const list = view === "wells" ? data.topByWellCount : data.topByProduction;
 
-  const chartData = list.slice(0, 15).map((op) => ({
-    name: op.operatorAbbr || op.operator.slice(0, 20),
-    value: view === "wells" ? op.wellCount : op.totalGas3Yr,
-  }));
+  const chartData = list.slice(0, 15).map((op, index) => {
+    const label = op.operatorAbbr || op.operator.slice(0, 20);
+    return {
+      name: `${label} · ${op.operatorId || index}`,
+      value: view === "wells" ? op.wellCount : op.totalGas3Yr,
+    };
+  });
 
   function exportOperators() {
     const rows = list.map((op) => ({
@@ -183,14 +186,55 @@ function OperatorList({
           </div>
         </CardHeader>
         <CardContent className="pt-0">
-          <div className="overflow-x-auto">
+          <div className="space-y-3 md:hidden">
+            {list.map((op) => (
+              <div key={`${op.operatorId}-${op.operator}`} className="rounded-lg border border-border/50 bg-muted/10 p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => onSelect(op)}
+                      className="break-words text-left font-medium text-primary hover:underline [overflow-wrap:anywhere]"
+                    >
+                      {op.operatorAbbr || op.operator}
+                    </button>
+                    {op.operatorAbbr && (
+                      <p className="mt-1 break-words text-xs text-muted-foreground [overflow-wrap:anywhere]">{op.operator}</p>
+                    )}
+                  </div>
+                  <Button variant="ghost" size="sm" className="min-h-10 shrink-0 text-xs text-primary sm:min-h-8" onClick={() => onSelect(op)}>
+                    View
+                  </Button>
+                </div>
+                <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                  <div>
+                    <dt className="text-xs text-muted-foreground">Wells</dt>
+                    <dd className="font-mono font-medium">{op.wellCount.toLocaleString()}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-muted-foreground">Horizontal</dt>
+                    <dd className="font-mono font-medium">{op.horizontalCount.toLocaleString()}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-muted-foreground">3yr Gas (000 m3)</dt>
+                    <dd className="font-mono font-medium">{formatNumber(op.totalGas3Yr, 0)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-muted-foreground">Top Area</dt>
+                    <dd className="break-words font-medium [overflow-wrap:anywhere]">{op.topArea ?? "—"}</dd>
+                  </div>
+                </dl>
+              </div>
+            ))}
+          </div>
+          <div className="hidden overflow-x-auto md:block">
             <Table>
               <TableHeader>
                 <TableRow className="border-border/50 hover:bg-transparent">
                   <TableHead className="h-8 text-xs">Operator</TableHead>
                   <TableHead className="h-8 text-xs text-right">Wells</TableHead>
                   <TableHead className="h-8 text-xs text-right">HZ</TableHead>
-                  <TableHead className="h-8 text-xs text-right">3yr Gas</TableHead>
+                  <TableHead className="h-8 text-xs text-right">3yr Gas (000 m3)</TableHead>
                   <TableHead className="h-8 text-xs">Top Area</TableHead>
                   <TableHead className="h-8 text-xs">Top Formation</TableHead>
                   <TableHead className="h-8 text-xs" />
@@ -198,7 +242,7 @@ function OperatorList({
               </TableHeader>
               <TableBody>
                 {list.map((op) => (
-                  <TableRow key={op.operatorId} className="border-border/30 hover:bg-muted/50">
+                  <TableRow key={`${op.operatorId}-${op.operator}`} className="border-border/30 hover:bg-muted/50">
                     <TableCell className="py-2">
                       <button
                         type="button"
@@ -490,7 +534,46 @@ function OperatorDetailView({
           </div>
         </CardHeader>
         <CardContent className="pt-0">
-          <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+          <div className="max-h-[500px] space-y-3 overflow-y-auto md:hidden">
+            {wells.map((well) => (
+              <div key={well.waNum} className="rounded-lg border border-border/50 bg-muted/10 p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <Link to={`/wells/${well.waNum}`} className="font-medium text-primary hover:underline">
+                      WA {well.waNum}
+                    </Link>
+                    <p className="mt-1 break-words text-sm font-medium [overflow-wrap:anywhere]">
+                      {well.wellName ?? "Unnamed well"}
+                    </p>
+                  </div>
+                  {well.orientation && (
+                    <Badge variant="outline" className="shrink-0 text-[10px]">
+                      {well.orientation === "HZ" ? "HZ" : "VT"}
+                    </Badge>
+                  )}
+                </div>
+                <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                  <div>
+                    <dt className="text-xs text-muted-foreground">Area</dt>
+                    <dd className="break-words font-medium [overflow-wrap:anywhere]">{well.areaDesc ?? "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-muted-foreground">Formation</dt>
+                    <dd className="break-words font-medium [overflow-wrap:anywhere]">{well.formDesc ?? "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-muted-foreground">3yr Gas (000 m3)</dt>
+                    <dd className="font-mono font-medium">{formatNumber(well.gasProd3Yr, 1)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-muted-foreground">5yr Gas (000 m3)</dt>
+                    <dd className="font-mono font-medium">{formatNumber(well.gasProd5Yr, 1)}</dd>
+                  </div>
+                </dl>
+              </div>
+            ))}
+          </div>
+          <div className="hidden max-h-[500px] overflow-x-auto overflow-y-auto md:block">
             <Table>
               <TableHeader>
                 <TableRow className="border-border/50 hover:bg-transparent">
@@ -499,8 +582,8 @@ function OperatorDetailView({
                   <TableHead className="h-8 text-xs sticky top-0 bg-card">Area</TableHead>
                   <TableHead className="h-8 text-xs sticky top-0 bg-card">Formation</TableHead>
                   <TableHead className="h-8 text-xs sticky top-0 bg-card">Orientation</TableHead>
-                  <TableHead className="h-8 text-xs text-right sticky top-0 bg-card">3yr Gas</TableHead>
-                  <TableHead className="h-8 text-xs text-right sticky top-0 bg-card">5yr Gas</TableHead>
+                  <TableHead className="h-8 text-xs text-right sticky top-0 bg-card">3yr Gas (000 m3)</TableHead>
+                  <TableHead className="h-8 text-xs text-right sticky top-0 bg-card">5yr Gas (000 m3)</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -560,11 +643,15 @@ export function OperatorsPage() {
   }, []);
 
   function handleSelectOperator(op: OperatorSummary) {
-    setSearchParams({ id: String(op.operatorId) });
+    const next = new URLSearchParams(searchParams);
+    next.set("id", String(op.operatorId));
+    setSearchParams(next);
   }
 
   function handleBack() {
-    setSearchParams({});
+    const next = new URLSearchParams(searchParams);
+    next.delete("id");
+    setSearchParams(next);
   }
 
   if (loading) {

@@ -266,8 +266,9 @@ export function SearchPage() {
                       <div className="grid grid-cols-2 gap-2">
                         {group.fields.map(([name, label]) => (
                           <div key={name} className="space-y-1">
-                            <Label className="text-xs text-muted-foreground">{label}</Label>
+                            <Label htmlFor={`search-${name}`} className="text-xs text-muted-foreground">{label}</Label>
                             <Input
+                              id={`search-${name}`}
                               name={name}
                               value={filters[name as keyof typeof filters]}
                               onChange={(e) => updateField(name, e.target.value)}
@@ -282,8 +283,9 @@ export function SearchPage() {
                   {/* Dropdowns */}
                   <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Orientation</Label>
+                      <Label htmlFor="search-orientation" className="text-xs text-muted-foreground">Orientation</Label>
                       <select
+                        id="search-orientation"
                         value={filters.orientation}
                         onChange={(e) => updateField("orientation", e.target.value)}
                         className="h-8 w-full rounded-md border border-input bg-muted/50 px-2 text-sm"
@@ -294,21 +296,23 @@ export function SearchPage() {
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Sort</Label>
+                      <Label htmlFor="search-sort" className="text-xs text-muted-foreground">Sort</Label>
                       <select
+                        id="search-sort"
                         value={filters.sort}
                         onChange={(e) => updateField("sort", e.target.value)}
                         className="h-8 w-full rounded-md border border-input bg-muted/50 px-2 text-sm"
                       >
-                        <option value="high3YrProd">3yr prod</option>
-                        <option value="high5YrProd">5yr prod</option>
+                        <option value="high3YrProd">3yr gas (000 m3)</option>
+                        <option value="high5YrProd">5yr gas (000 m3)</option>
                         <option value="highestWa">Highest WA</option>
                         <option value="lowestWa">Lowest WA</option>
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Per page</Label>
+                      <Label htmlFor="search-page-size" className="text-xs text-muted-foreground">Per page</Label>
                       <select
+                        id="search-page-size"
                         value={filters.pageSize}
                         onChange={(e) => updateField("pageSize", e.target.value)}
                         className="h-8 w-full rounded-md border border-input bg-muted/50 px-2 text-sm"
@@ -336,9 +340,9 @@ export function SearchPage() {
         </Collapsible>
 
         {/* Results */}
-        <Card className="flex-1 border-border/50 bg-card/80 backdrop-blur-sm">
+        <Card className="min-w-0 flex-1 border-border/50 bg-card/80 backdrop-blur-sm">
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
                 Results
               </CardTitle>
@@ -383,7 +387,50 @@ export function SearchPage() {
 
             {!loading && !error && results && results.items.length > 0 && (
               <>
-                <div className="overflow-x-auto rounded-lg border border-border/50">
+                <div className="space-y-3 md:hidden">
+                  {results.items.map((item) => (
+                    <div key={item.waNum} className="rounded-lg border border-border/50 bg-muted/10 p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <Link to={`/wells/${item.waNum}`} className="font-semibold text-primary hover:underline">
+                            WA {item.waNum}
+                          </Link>
+                          <p className="mt-1 break-words text-sm font-medium [overflow-wrap:anywhere]">
+                            {item.wellName ?? "Unnamed well"}
+                          </p>
+                          <p className="mt-1 break-words text-xs text-muted-foreground [overflow-wrap:anywhere]">
+                            {item.operator ?? "No operator"}{item.operatorAbbr ? ` · ${item.operatorAbbr.trim()}` : ""}
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="shrink-0 text-[10px]">
+                          {item.orientation ?? "VERT"}
+                        </Badge>
+                      </div>
+                      <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                        <div>
+                          <dt className="text-xs text-muted-foreground">Area / Formation</dt>
+                          <dd className="break-words font-medium [overflow-wrap:anywhere]">
+                            {item.areaDesc ?? "—"} / {item.formDesc ?? "—"}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-muted-foreground">First Prod</dt>
+                          <dd className="font-medium">{formatMonthCode(item.firstProdMon)}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-muted-foreground">3yr Gas (000 m3)</dt>
+                          <dd className="font-mono font-medium">{formatNumber(item.gasProd3Yr, 1)}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-muted-foreground">5yr Gas (000 m3)</dt>
+                          <dd className="font-mono font-medium">{formatNumber(item.gasProd5Yr, 1)}</dd>
+                        </div>
+                      </dl>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="hidden overflow-x-auto rounded-lg border border-border/50 md:block">
                   <Table>
                     <TableHeader>
                       <TableRow className="border-border/50 hover:bg-transparent">
@@ -394,8 +441,8 @@ export function SearchPage() {
                         <TableHead className="text-xs">Dates</TableHead>
                         <TableHead className="text-xs">Orient.</TableHead>
                         <TableHead className="text-xs">Coordinates</TableHead>
-                        <TableHead className="text-xs text-right">3yr Gas</TableHead>
-                        <TableHead className="text-xs text-right">5yr Gas</TableHead>
+                        <TableHead className="text-xs text-right">3yr Gas (000 m3)</TableHead>
+                        <TableHead className="text-xs text-right">5yr Gas (000 m3)</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>

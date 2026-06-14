@@ -129,6 +129,15 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-bold font-[family-name:var(--font-heading)] tracking-tight">
+          BCER Well Data Dashboard
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Current coverage, production trends, and shortcuts into well-level exploration.
+        </p>
+      </div>
+
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="glow-card border-border/50 bg-card/80 backdrop-blur-sm">
@@ -431,7 +440,7 @@ export function DashboardPage() {
                     <TableRow className="border-border/50 hover:bg-transparent">
                       <TableHead className="h-8 text-xs">WA</TableHead>
                       <TableHead className="h-8 text-xs">Well Name</TableHead>
-                      <TableHead className="h-8 text-xs text-right">3yr Gas</TableHead>
+                      <TableHead className="h-8 text-xs text-right">3yr Gas (000 m3)</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -462,7 +471,7 @@ export function DashboardPage() {
                     <TableRow className="border-border/50 hover:bg-transparent">
                       <TableHead className="h-8 text-xs">WA</TableHead>
                       <TableHead className="h-8 text-xs">Operator</TableHead>
-                      <TableHead className="h-8 text-xs text-right">3yr Gas</TableHead>
+                      <TableHead className="h-8 text-xs text-right">3yr Gas (000 m3)</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

@@ -133,7 +133,7 @@ function MapControls() {
           type="button"
           onClick={handleZoomIn}
           aria-label="Zoom in"
-          className="flex size-8 items-center justify-center transition-colors hover:bg-accent/40"
+          className="flex size-10 items-center justify-center transition-colors hover:bg-accent/40 sm:size-8"
         >
           <Plus className="size-4" />
         </button>
@@ -141,7 +141,7 @@ function MapControls() {
           type="button"
           onClick={handleZoomOut}
           aria-label="Zoom out"
-          className="flex size-8 items-center justify-center transition-colors hover:bg-accent/40"
+          className="flex size-10 items-center justify-center transition-colors hover:bg-accent/40 sm:size-8"
         >
           <Minus className="size-4" />
         </button>
