@@ -36,3 +36,9 @@ The API listens on `http://127.0.0.1:3001` and the Vite app on `http://127.0.0.1
 npm run build
 npm test
 ```
+
+## Static data
+
+The production site is deployed as static assets. JSON data is generated from SQLite during `npm run build:static`, copied into the Vite build, and compressed before GitHub Pages upload.
+
+See [docs/static-json-data.md](docs/static-json-data.md) for the file catalog, generation pipeline, compression behavior, and frontend loading paths.
