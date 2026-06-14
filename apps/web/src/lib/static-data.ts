@@ -1,3 +1,4 @@
+import { gunzipSync, strFromU8 } from "fflate";
 import type {
   SearchResponse,
   SortOption,
@@ -19,12 +20,26 @@ const detailBatchCache = new Map<number, Record<string, WellDetail>>();
 
 // ---- JSON loader ----
 async function loadJson<T>(path: string): Promise<T> {
-  if (import.meta.env.PROD && typeof DecompressionStream !== "undefined") {
+  if (import.meta.env.PROD) {
+    const compressedUrl = `${BASE}/${path}.gz`;
+
     try {
-      const compressed = await fetch(`${BASE}/${path}.gz`);
+      const compressed = await fetch(compressedUrl);
       if (compressed.ok && compressed.body) {
-        const stream = compressed.body.pipeThrough(new DecompressionStream("gzip"));
-        return new Response(stream).json() as Promise<T>;
+        if (typeof DecompressionStream !== "undefined") {
+          try {
+            const stream = compressed.body.pipeThrough(new DecompressionStream("gzip"));
+            return await new Response(stream).json() as T;
+          } catch {
+            const compressedForFallback = await fetch(compressedUrl);
+            if (!compressedForFallback.ok) throw new Error(`Failed to load ${path}: ${compressedForFallback.status}`);
+            const bytes = new Uint8Array(await compressedForFallback.arrayBuffer());
+            return JSON.parse(strFromU8(gunzipSync(bytes))) as T;
+          }
+        }
+
+        const bytes = new Uint8Array(await compressed.arrayBuffer());
+        return JSON.parse(strFromU8(gunzipSync(bytes))) as T;
       }
     } catch {
       // Fall back to the uncompressed JSON path below.
