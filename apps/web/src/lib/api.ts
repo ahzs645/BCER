@@ -1,6 +1,8 @@
 import type {
   AggregateProductionData,
   DashboardData,
+  DimensionDetailData,
+  DimensionIndexData,
   OperatorAnalyticsData,
   OperatorDetailData,
   ProductionExplorerData,
@@ -76,4 +78,20 @@ export function fetchOperatorDetail(
   operatorId: string,
 ): Promise<OperatorDetailData> {
   return loadJson<OperatorDetailData>(`operators/${operatorId}.json`);
+}
+
+export function fetchAreaIndex(): Promise<DimensionIndexData> {
+  return loadJson<DimensionIndexData>("areas/index.json");
+}
+
+export function fetchAreaDetail(areaCode: string): Promise<DimensionDetailData> {
+  return loadJson<DimensionDetailData>(`areas/${areaCode}.json`);
+}
+
+export function fetchFormationIndex(): Promise<DimensionIndexData> {
+  return loadJson<DimensionIndexData>("formations/index.json");
+}
+
+export function fetchFormationDetail(formCode: string): Promise<DimensionDetailData> {
+  return loadJson<DimensionDetailData>(`formations/${formCode}.json`);
 }

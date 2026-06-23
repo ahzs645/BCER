@@ -9,6 +9,10 @@ import {
   getProductionExplorer,
   getOperatorAnalytics,
   getOperatorDetail,
+  getAreaIndex,
+  getAreaDetail,
+  getFormationIndex,
+  getFormationDetail,
   getWellDetail,
 } from "./queries.js";
 import type { WellSearchResult } from "../../../packages/shared/src/index.js";
@@ -111,6 +115,38 @@ function main() {
     }
   }
   console.log(`  ${opCount} operator detail files written`);
+
+  // --- Areas ---
+  console.log("\nAreas:");
+  writeJson("areas/index.json", getAreaIndex(db));
+  const areaRows = db
+    .prepare("SELECT DISTINCT area_code FROM well_search WHERE area_code IS NOT NULL ORDER BY area_code")
+    .all() as Array<{ area_code: number }>;
+  let areaCount = 0;
+  for (const row of areaRows) {
+    const detail = getAreaDetail(db, row.area_code);
+    if (detail) {
+      writeJson(`areas/${row.area_code}.json`, detail);
+      areaCount++;
+    }
+  }
+  console.log(`  ${areaCount} area detail files written`);
+
+  // --- Formations ---
+  console.log("\nFormations:");
+  writeJson("formations/index.json", getFormationIndex(db));
+  const formationRows = db
+    .prepare("SELECT DISTINCT form_code FROM well_search WHERE form_code IS NOT NULL ORDER BY form_code")
+    .all() as Array<{ form_code: number }>;
+  let formationCount = 0;
+  for (const row of formationRows) {
+    const detail = getFormationDetail(db, row.form_code);
+    if (detail) {
+      writeJson(`formations/${row.form_code}.json`, detail);
+      formationCount++;
+    }
+  }
+  console.log(`  ${formationCount} formation detail files written`);
 
   // --- Search index ---
   console.log("\nSearch index:");

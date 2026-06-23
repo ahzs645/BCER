@@ -32,7 +32,7 @@ import { downloadCsv, toFilenameStem } from "@/lib/export";
 import { useSortableRows } from "@/lib/table-sort";
 import { useChartTheme } from "@/lib/chart-theme";
 import { useIsMobile } from "@/hooks/use-mobile";
-import type { OperatorAnalyticsData, OperatorDetailData, OperatorSummary } from "@/types";
+import type { OperatorAnalyticsData, OperatorDetailData, OperatorSummary, WellSearchResult } from "@/types";
 
 const BAR_COLOR = "#06b6d4";
 const BAR_COLOR_ALT = "#10b981";
@@ -45,6 +45,16 @@ function searchUrl(key: string, value: string | number | null | undefined) {
   const params = new URLSearchParams();
   params.set(key, String(value));
   return `/search?${params.toString()}`;
+}
+
+function areaHref(well: WellSearchResult) {
+  if (well.areaCode !== null) return `/areas/${well.areaCode}`;
+  return well.areaDesc ? searchUrl("area", well.areaDesc) : null;
+}
+
+function formationHref(well: WellSearchResult) {
+  if (well.formCode !== null) return `/formations/${well.formCode}`;
+  return well.formDesc ? searchUrl("formation", well.formDesc) : null;
 }
 
 function OperatorList({
@@ -587,13 +597,13 @@ function OperatorDetailView({
                   <div>
                     <dt className="text-xs text-muted-foreground">Area</dt>
                     <dd className="break-words font-medium [overflow-wrap:anywhere]">
-                      {well.areaDesc ? <Link to={searchUrl("area", well.areaDesc)} className="text-primary hover:underline">{well.areaDesc}</Link> : "—"}
+                      {well.areaDesc ? <Link to={areaHref(well) ?? "/search"} className="text-primary hover:underline">{well.areaDesc}</Link> : "—"}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-xs text-muted-foreground">Formation</dt>
                     <dd className="break-words font-medium [overflow-wrap:anywhere]">
-                      {well.formDesc ? <Link to={searchUrl("formation", well.formDesc)} className="text-primary hover:underline">{well.formDesc}</Link> : "—"}
+                      {well.formDesc ? <Link to={formationHref(well) ?? "/search"} className="text-primary hover:underline">{well.formDesc}</Link> : "—"}
                     </dd>
                   </div>
                   <div>
@@ -633,10 +643,10 @@ function OperatorDetailView({
                       {well.wellName ?? "—"}
                     </TableCell>
                     <TableCell className="py-1.5 text-sm text-muted-foreground">
-                      {well.areaDesc ? <Link to={searchUrl("area", well.areaDesc)} className="text-primary hover:underline">{well.areaDesc}</Link> : "—"}
+                      {well.areaDesc ? <Link to={areaHref(well) ?? "/search"} className="text-primary hover:underline">{well.areaDesc}</Link> : "—"}
                     </TableCell>
                     <TableCell className="py-1.5 text-sm text-muted-foreground">
-                      {well.formDesc ? <Link to={searchUrl("formation", well.formDesc)} className="text-primary hover:underline">{well.formDesc}</Link> : "—"}
+                      {well.formDesc ? <Link to={formationHref(well) ?? "/search"} className="text-primary hover:underline">{well.formDesc}</Link> : "—"}
                     </TableCell>
                     <TableCell className="py-1.5">
                       {well.orientation && (

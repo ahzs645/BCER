@@ -172,8 +172,8 @@ export interface DashboardData {
   totalHorizontal: number;
   totalVertical: number;
   dataCurrentTo: string;
-  topAreas: Array<{ areaDesc: string; count: number }>;
-  topFormations: Array<{ formDesc: string; count: number }>;
+  topAreas: Array<{ areaCode: number | null; areaDesc: string; count: number }>;
+  topFormations: Array<{ formCode: number | null; formDesc: string; count: number }>;
   orientationBreakdown: Array<{ orientation: string; count: number }>;
   recentWells: WellSearchResult[];
   productionLeaders: WellSearchResult[];
@@ -209,6 +209,57 @@ export interface OperatorDetailData {
 export interface AggregateProductionPoint {
   label: string;
   value: number;
+}
+
+export type DimensionKind = "area" | "formation";
+
+export interface DimensionSummary {
+  code: number;
+  desc: string;
+  wellCount: number;
+  horizontalCount: number;
+  verticalCount: number;
+  totalGas3Yr: number;
+  totalGas5Yr: number;
+  operatorCount: number;
+  topOperator: string | null;
+  /** Top formation for an area, or top area for a formation. */
+  topCross: string | null;
+}
+
+export interface DimensionOperatorItem {
+  operator: string;
+  operatorId: number;
+  count: number;
+  totalGas3Yr: number;
+}
+
+export interface DimensionBreakdownItem {
+  desc: string;
+  count: number;
+}
+
+export interface DimensionDetailData {
+  kind: DimensionKind;
+  summary: DimensionSummary;
+  wells: WellSearchResult[];
+  operatorBreakdown: DimensionOperatorItem[];
+  /** Formations within an area, or areas within a formation. */
+  crossBreakdown: DimensionBreakdownItem[];
+  orientationBreakdown: Array<{ orientation: string; count: number }>;
+  fiscalYearProduction: AggregateProductionPoint[];
+}
+
+export interface DimensionIndexItem {
+  code: number;
+  desc: string;
+  wellCount: number;
+  totalGas3Yr: number;
+}
+
+export interface DimensionIndexData {
+  kind: DimensionKind;
+  items: DimensionIndexItem[];
 }
 
 export interface AggregateProductionData {

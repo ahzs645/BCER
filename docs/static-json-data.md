@@ -62,6 +62,10 @@ Current uncompressed output under `apps/web/public/data` is about `652M` across 
 | `production-explorer.json` | `getProductionExplorer(db)` | Production Explorer dashboard component | Fiscal-year list plus per-well production vectors used for client-side exploration. |
 | `operators/index.json` | `getOperatorAnalytics(db)` | Operators page | Operator leaderboard data and summary analytics. |
 | `operators/{operatorId}.json` | `getOperatorDetail(db, operatorId)` | Operator detail view | One file per operator containing summary, wells, area breakdown, formation breakdown, and orientation breakdown. |
+| `areas/index.json` | `getAreaIndex(db)` | Area profile (lookup) | Code + description + well count + 3yr gas per area. |
+| `areas/{areaCode}.json` | `getAreaDetail(db, areaCode)` | Area profile page | Summary, wells, operator breakdown, formation (cross) breakdown, orientation breakdown, and fiscal-year production for one area. |
+| `formations/index.json` | `getFormationIndex(db)` | Formation profile (lookup) | Code + description + well count + 3yr gas per formation. |
+| `formations/{formCode}.json` | `getFormationDetail(db, formCode)` | Formation profile page | Summary, wells, operator breakdown, area (cross) breakdown, orientation breakdown, and fiscal-year production for one formation. |
 | `wells/search.json` | `SELECT * FROM well_search`, mapped by `mapSearchRow()` | Search, Map, well lookup flows | Client-side search index with one compact record per well. |
 | `wells/detail/manifest.json` | Detail batch loop in `export-static.ts` | Well detail loader | Batch index with `index`, `minWa`, and `maxWa` for each detail batch. |
 | `wells/detail/batch-{index}.json` | `getWellDetail(db, waNum)` | Well detail page | Batched object keyed by WA number, containing full well detail records. |
@@ -153,6 +157,8 @@ The loader tries compressed JSON first in production. It uses native `Decompress
 | Map | `wells/search.json`, converted client-side to GeoJSON |
 | Operators list | `operators/index.json` |
 | Operator detail | `operators/{operatorId}.json` |
+| Area profile | `areas/{areaCode}.json` |
+| Formation profile | `formations/{formCode}.json` |
 | Well detail | `wells/detail/manifest.json`, then the matching `wells/detail/batch-{index}.json`, plus `meta.json` |
 
 ## GitHub Pages Behavior

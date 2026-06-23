@@ -8,6 +8,7 @@ import { AboutPage } from "./pages/AboutPage";
 import { SearchPage } from "./pages/SearchPage";
 import { OperatorsPage } from "./pages/OperatorsPage";
 import { WellDetailPage } from "./pages/WellDetailPage";
+import { AreaPage, FormationPage } from "./pages/DimensionProfilePage";
 import "./styles/globals.css";
 
 const MapPage = lazy(() => import("./pages/MapPage").then((m) => ({ default: m.MapPage })));
@@ -21,6 +22,8 @@ createRoot(document.getElementById("root")!).render(
           <Route index element={<DashboardPage />} />
           <Route path="search" element={<SearchPage />} />
           <Route path="operators" element={<OperatorsPage />} />
+          <Route path="areas/:code" element={<AreaPage />} />
+          <Route path="formations/:code" element={<FormationPage />} />
           <Route path="map" element={<Suspense><MapPage /></Suspense>} />
           <Route path="wells/:waNum" element={<WellDetailPage />} />
           <Route path="about" element={<AboutPage />} />

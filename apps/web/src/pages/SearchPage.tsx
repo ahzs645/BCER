@@ -132,6 +132,16 @@ function searchUrl(key: string, value: string | number | null | undefined) {
   return `/search?${params.toString()}`;
 }
 
+function areaHref(item: WellSearchResult) {
+  if (item.areaCode !== null) return `/areas/${item.areaCode}`;
+  return item.areaDesc ? searchUrl("area", item.areaDesc) : null;
+}
+
+function formationHref(item: WellSearchResult) {
+  if (item.formCode !== null) return `/formations/${item.formCode}`;
+  return item.formDesc ? searchUrl("formation", item.formDesc) : null;
+}
+
 function wellToCsvRow(item: WellSearchResult) {
   return {
     wa_num: item.waNum,
@@ -470,8 +480,8 @@ export function SearchPage() {
                         <div>
                           <dt className="text-xs text-muted-foreground">Area / Formation</dt>
                           <dd className="break-words font-medium [overflow-wrap:anywhere]">
-                            {item.areaDesc ? <Link to={searchUrl("area", item.areaDesc)} className="text-primary hover:underline">{item.areaDesc}</Link> : "—"} /{" "}
-                            {item.formDesc ? <Link to={searchUrl("formation", item.formDesc)} className="text-primary hover:underline">{item.formDesc}</Link> : "—"}
+                            {item.areaDesc ? <Link to={areaHref(item) ?? "/search"} className="text-primary hover:underline">{item.areaDesc}</Link> : "—"} /{" "}
+                            {item.formDesc ? <Link to={formationHref(item) ?? "/search"} className="text-primary hover:underline">{item.formDesc}</Link> : "—"}
                           </dd>
                         </div>
                         <div>
@@ -532,10 +542,10 @@ export function SearchPage() {
                           </TableCell>
                           <TableCell className="py-2">
                             <div className="text-sm font-medium">
-                              {item.areaDesc ? <Link to={searchUrl("area", item.areaDesc)} className="text-primary hover:underline">{item.areaDesc}</Link> : "—"}
+                              {item.areaDesc ? <Link to={areaHref(item) ?? "/search"} className="text-primary hover:underline">{item.areaDesc}</Link> : "—"}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {item.formDesc ? <Link to={searchUrl("formation", item.formDesc)} className="text-primary hover:underline">{item.formDesc}</Link> : "—"}
+                              {item.formDesc ? <Link to={formationHref(item) ?? "/search"} className="text-primary hover:underline">{item.formDesc}</Link> : "—"}
                             </div>
                           </TableCell>
                           <TableCell className="py-2">

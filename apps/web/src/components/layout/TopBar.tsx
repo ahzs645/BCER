@@ -38,6 +38,14 @@ function useBreadcrumbs() {
     return [{ label: "Dashboard", href: "/" }, { label: "About" }];
   }
 
+  if (/^\/areas\/\d+/.test(path)) {
+    return [{ label: "Dashboard", href: "/" }, { label: "Area profile" }];
+  }
+
+  if (/^\/formations\/\d+/.test(path)) {
+    return [{ label: "Dashboard", href: "/" }, { label: "Formation profile" }];
+  }
+
   const wellMatch = path.match(/^\/wells\/(\d+)/);
   if (wellMatch) {
     return [

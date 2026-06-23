@@ -211,7 +211,7 @@ export function DashboardPage() {
         </Card>
 
         <Link
-          to={topArea ? searchUrl("area", topArea.areaDesc) : "/search"}
+          to={topArea?.areaCode != null ? `/areas/${topArea.areaCode}` : topArea ? searchUrl("area", topArea.areaDesc) : "/search"}
           className="block rounded-xl outline-none ring-primary/50 transition-shadow hover:ring-2 focus-visible:ring-2"
         >
           <Card className="glow-card h-full border-border/50 bg-card/80 backdrop-blur-sm">
@@ -372,7 +372,9 @@ export function DashboardPage() {
                 margin={{ left: 10, right: 20, top: 5, bottom: 5 }}
                 onClick={(state) => {
                   const label = (state as { activeLabel?: string } | null)?.activeLabel;
-                  if (label) navigate(searchUrl("area", label));
+                  if (!label) return;
+                  const area = data.topAreas.find((a) => a.areaDesc === label);
+                  navigate(area?.areaCode != null ? `/areas/${area.areaCode}` : searchUrl("area", label));
                 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />
@@ -404,7 +406,9 @@ export function DashboardPage() {
                 margin={{ left: 10, right: 20, top: 5, bottom: 5 }}
                 onClick={(state) => {
                   const label = (state as { activeLabel?: string } | null)?.activeLabel;
-                  if (label) navigate(searchUrl("formation", label));
+                  if (!label) return;
+                  const form = data.topFormations.find((f) => f.formDesc === label);
+                  navigate(form?.formCode != null ? `/formations/${form.formCode}` : searchUrl("formation", label));
                 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />

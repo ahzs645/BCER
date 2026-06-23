@@ -40,8 +40,16 @@ function linkForCell(column: string, value: string | number | null, row: Record<
   if (column === "well_name" && row.wa_num) return `/wells/${row.wa_num}`;
   if (column === "operator_id") return `/operators?id=${value}`;
   if ((column === "operator" || column === "operator_abbr") && row.operator_id) return `/operators?id=${row.operator_id}`;
-  if (column === "area_desc") return searchUrl("area", value);
-  if (column === "form_desc") return searchUrl("formation", value);
+  if (column === "area_desc") {
+    return row.area_code !== null && row.area_code !== undefined && row.area_code !== ""
+      ? `/areas/${row.area_code}`
+      : searchUrl("area", value);
+  }
+  if (column === "form_desc") {
+    return row.form_code !== null && row.form_code !== undefined && row.form_code !== ""
+      ? `/formations/${row.form_code}`
+      : searchUrl("formation", value);
+  }
   if (column === "uwi") return searchUrl("uwi", value);
 
   return null;
