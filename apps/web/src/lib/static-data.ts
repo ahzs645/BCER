@@ -97,10 +97,13 @@ function makeTextMatcher(rawTerm: string): (value: string | null | undefined) =>
   return (value) => (value ? value.toLowerCase().includes(term) : false);
 }
 
-export function clientSearch(
+// Applies the full BCER filter set to the well list, returning every matching
+// row (unsorted, unpaginated). Shared by clientSearch (Search page) and the Map
+// so both honor identical query parameters.
+export function filterWells(
   allWells: WellSearchResult[],
   filters: Record<string, string | number | undefined>,
-): SearchResponse {
+): WellSearchResult[] {
   let results = allWells;
 
   // --- WA number filters ---
@@ -226,9 +229,15 @@ export function clientSearch(
     );
   }
 
-  // --- Sort ---
-  const sort = (filters.sort as SortOption) ?? "high3YrProd";
-  const sorted = [...results];
+  return results;
+}
+
+// Returns a sorted copy of the wells using the same ordering options as the API.
+export function sortWells(
+  wells: WellSearchResult[],
+  sort: SortOption = "high3YrProd",
+): WellSearchResult[] {
+  const sorted = [...wells];
   switch (sort) {
     case "high5YrProd":
       sorted.sort((a, b) => b.gasProd5Yr - a.gasProd5Yr || b.waNum - a.waNum);
@@ -244,6 +253,23 @@ export function clientSearch(
       sorted.sort((a, b) => b.gasProd3Yr - a.gasProd3Yr || b.waNum - a.waNum);
       break;
   }
+  return sorted;
+}
+
+// Filters + sorts every matching well, without pagination. Used by full-result
+// CSV export and anywhere the entire matching set is needed.
+export function filterAndSortWells(
+  allWells: WellSearchResult[],
+  filters: Record<string, string | number | undefined>,
+): WellSearchResult[] {
+  return sortWells(filterWells(allWells, filters), filters.sort as SortOption);
+}
+
+export function clientSearch(
+  allWells: WellSearchResult[],
+  filters: Record<string, string | number | undefined>,
+): SearchResponse {
+  const sorted = filterAndSortWells(allWells, filters);
 
   // --- Paginate ---
   const page = Math.max(Number(filters.page) || 1, 1);

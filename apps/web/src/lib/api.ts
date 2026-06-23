@@ -11,6 +11,8 @@ import type {
 } from "../types";
 import {
   clientSearch,
+  filterAndSortWells,
+  filterWells,
   generateGeoJson,
   loadJson,
   loadSearchIndex,
@@ -29,11 +31,12 @@ export function fetchAggregateProduction(): Promise<AggregateProductionData> {
   return loadJson<AggregateProductionData>("aggregate-production.json");
 }
 
-export async function fetchWellGeoJson(): Promise<
-  GeoJSON.FeatureCollection<GeoJSON.Point>
-> {
+export async function fetchWellGeoJson(
+  filters?: Record<string, string | number | undefined>,
+): Promise<GeoJSON.FeatureCollection<GeoJSON.Point>> {
   const wells = await loadSearchIndex();
-  return generateGeoJson(wells);
+  const scoped = filters ? filterWells(wells, filters) : wells;
+  return generateGeoJson(scoped);
 }
 
 export async function fetchWellSearch(
@@ -41,6 +44,14 @@ export async function fetchWellSearch(
 ): Promise<SearchResponse> {
   const wells = await loadSearchIndex();
   return clientSearch(wells, filters);
+}
+
+/** Every well matching the filters (sorted, unpaginated) — used for full CSV export. */
+export async function fetchFilteredWells(
+  filters: Record<string, string | number | undefined>,
+): Promise<WellSearchResult[]> {
+  const wells = await loadSearchIndex();
+  return filterAndSortWells(wells, filters);
 }
 
 export function fetchAllWells(): Promise<WellSearchResult[]> {

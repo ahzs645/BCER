@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Moon, Sun } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
+import { useTheme } from "@/lib/theme";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -63,7 +64,7 @@ function WaLookup() {
   }
 
   return (
-    <form onSubmit={submit} className="flex items-center gap-1 sm:ml-auto">
+    <form onSubmit={submit} className="flex flex-1 items-center gap-1 sm:flex-none">
       <Input
         type="text"
         inputMode="numeric"
@@ -81,6 +82,20 @@ function WaLookup() {
         <ArrowRight className="h-4 w-4" />
       </button>
     </form>
+  );
+}
+
+function ThemeToggle() {
+  const { theme, toggle } = useTheme();
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-input bg-muted/40 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:h-8 sm:w-8"
+    >
+      {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+    </button>
   );
 }
 
@@ -116,7 +131,10 @@ export function TopBar() {
         </BreadcrumbList>
       </Breadcrumb>
       </div>
-      <WaLookup />
+      <div className="flex items-center gap-2 sm:ml-auto">
+        <WaLookup />
+        <ThemeToggle />
+      </div>
     </header>
   );
 }

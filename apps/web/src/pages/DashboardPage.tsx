@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   BarChart,
   Bar,
@@ -48,6 +48,13 @@ function toMcf(val: number) {
   return Number((val * GAS_M3_TO_MCF).toFixed(1));
 }
 
+function searchUrl(key: string, value: string | number | null | undefined) {
+  if (value === null || value === undefined || value === "") return "/search";
+  const params = new URLSearchParams();
+  params.set(key, String(value));
+  return `/search?${params.toString()}`;
+}
+
 function formatPeriod(period: number | null): string {
   if (!period) return "—";
   const year = Math.floor(period / 100);
@@ -57,6 +64,7 @@ function formatPeriod(period: number | null): string {
 }
 
 export function DashboardPage() {
+  const navigate = useNavigate();
   const { tooltipStyle, axisTickStyle, gridStroke } = useChartTheme();
   const isMobile = useIsMobile();
   const categoryAxisWidth = isMobile ? 80 : 120;
@@ -202,20 +210,25 @@ export function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="glow-card border-border/50 bg-card/80 backdrop-blur-sm">
-          <CardContent className="flex items-center gap-4 p-5">
-            <div className="rounded-lg bg-chart-2/10 p-2.5">
-              <TrendingUp className="h-5 w-5 text-chart-2" />
-            </div>
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Top Area</p>
-              <p className="text-lg font-bold font-[family-name:var(--font-heading)]">
-                {topArea?.areaDesc ?? "—"}
-                <span className="ml-1.5 text-sm font-normal text-muted-foreground">{topArea?.count ?? 0} wells</span>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <Link
+          to={topArea ? searchUrl("area", topArea.areaDesc) : "/search"}
+          className="block rounded-xl outline-none ring-primary/50 transition-shadow hover:ring-2 focus-visible:ring-2"
+        >
+          <Card className="glow-card h-full border-border/50 bg-card/80 backdrop-blur-sm">
+            <CardContent className="flex items-center gap-4 p-5">
+              <div className="rounded-lg bg-chart-2/10 p-2.5">
+                <TrendingUp className="h-5 w-5 text-chart-2" />
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Top Area</p>
+                <p className="text-lg font-bold font-[family-name:var(--font-heading)]">
+                  {topArea?.areaDesc ?? "—"}
+                  <span className="ml-1.5 text-sm font-normal text-muted-foreground">{topArea?.count ?? 0} wells</span>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Aggregate Production Charts */}
@@ -353,7 +366,15 @@ export function DashboardPage() {
           </CardHeader>
           <CardContent className="pt-0">
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={data.topAreas} layout="vertical" margin={{ left: 10, right: 20, top: 5, bottom: 5 }}>
+              <BarChart
+                data={data.topAreas}
+                layout="vertical"
+                margin={{ left: 10, right: 20, top: 5, bottom: 5 }}
+                onClick={(state) => {
+                  const label = (state as { activeLabel?: string } | null)?.activeLabel;
+                  if (label) navigate(searchUrl("area", label));
+                }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />
                 <XAxis type="number" tick={{ ...axisTickStyle, fontSize: 12 }} />
                 <YAxis
@@ -362,8 +383,8 @@ export function DashboardPage() {
                   width={categoryAxisWidth}
                   tick={axisTickStyle}
                 />
-                <RechartsTooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="count" fill={BAR_COLOR} radius={[0, 4, 4, 0]} />
+                <RechartsTooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--color-muted)", opacity: 0.4 }} />
+                <Bar dataKey="count" fill={BAR_COLOR} radius={[0, 4, 4, 0]} className="cursor-pointer" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -377,7 +398,15 @@ export function DashboardPage() {
           </CardHeader>
           <CardContent className="pt-0">
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={data.topFormations} layout="vertical" margin={{ left: 10, right: 20, top: 5, bottom: 5 }}>
+              <BarChart
+                data={data.topFormations}
+                layout="vertical"
+                margin={{ left: 10, right: 20, top: 5, bottom: 5 }}
+                onClick={(state) => {
+                  const label = (state as { activeLabel?: string } | null)?.activeLabel;
+                  if (label) navigate(searchUrl("formation", label));
+                }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />
                 <XAxis type="number" tick={{ ...axisTickStyle, fontSize: 12 }} />
                 <YAxis
@@ -386,8 +415,8 @@ export function DashboardPage() {
                   width={categoryAxisWidth}
                   tick={axisTickStyle}
                 />
-                <RechartsTooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="count" fill={BAR_COLOR_ALT} radius={[0, 4, 4, 0]} />
+                <RechartsTooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--color-muted)", opacity: 0.4 }} />
+                <Bar dataKey="count" fill={BAR_COLOR_ALT} radius={[0, 4, 4, 0]} className="cursor-pointer" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -414,6 +443,12 @@ export function DashboardPage() {
                   innerRadius={55}
                   outerRadius={80}
                   strokeWidth={0}
+                  className="cursor-pointer"
+                  onClick={(entry) => {
+                    const o = (entry as { orientation?: string; payload?: { orientation?: string } } | null);
+                    const value = o?.orientation ?? o?.payload?.orientation;
+                    if (value) navigate(searchUrl("orientation", value.toLowerCase()));
+                  }}
                 >
                   {data.orientationBreakdown.map((_, i) => (
                     <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />

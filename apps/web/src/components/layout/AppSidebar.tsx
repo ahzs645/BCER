@@ -1,8 +1,7 @@
-import { LayoutDashboard, Search, Building2, MapPin, Info, Database, Sun, Moon, Flame } from "lucide-react";
+import { LayoutDashboard, Search, Building2, MapPin, Info, Database, Flame } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { fetchSourceMeta } from "@/lib/api";
-import { useTheme } from "@/lib/theme";
 import type { SourceMeta } from "@/types";
 import {
   Sidebar,
@@ -26,7 +25,6 @@ const navItems = [
 ] as const;
 
 export function AppSidebar() {
-  const { theme, toggle } = useTheme();
   const [meta, setMeta] = useState<SourceMeta | null>(null);
 
   useEffect(() => {
@@ -78,14 +76,6 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="space-y-2 group-data-[collapsible=icon]:hidden">
-        <button
-          type="button"
-          onClick={toggle}
-          className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-          {theme === "dark" ? "Light mode" : "Dark mode"}
-        </button>
         <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2">
           <Database className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-xs text-muted-foreground">
