@@ -219,11 +219,13 @@ export function DashboardPage() {
               <div className="rounded-lg bg-chart-2/10 p-2.5">
                 <TrendingUp className="h-5 w-5 text-chart-2" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Top Area</p>
-                <p className="text-lg font-bold font-[family-name:var(--font-heading)]">
+                <p className="truncate text-lg font-bold font-[family-name:var(--font-heading)]">
                   {topArea?.areaDesc ?? "—"}
-                  <span className="ml-1.5 text-sm font-normal text-muted-foreground">{topArea?.count ?? 0} wells</span>
+                </p>
+                <p className="text-sm font-normal text-muted-foreground">
+                  {(topArea?.count ?? 0).toLocaleString()} wells
                 </p>
               </div>
             </CardContent>

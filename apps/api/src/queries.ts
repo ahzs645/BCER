@@ -266,7 +266,7 @@ function mapOverview(row: RowRecord): OverviewRecord {
 function buildProductionSeries(prdRow: RowRecord | null, advRows: RowRecord[]) {
   const firstProdPeriod = toNumber(prdRow?.first_prod_period ?? null);
 
-  return Array.from({ length: 60 }, (_, index) => {
+  const points = Array.from({ length: 60 }, (_, index) => {
     const suffix = String(index + 1).padStart(3, "0");
     const gasVolumeKm3 = toNumber(prdRow?.[`mprd_${suffix}`] ?? null);
     const avgDailyKm3 = sumColumn(advRows, `madv_${suffix}`);
@@ -282,6 +282,23 @@ function buildProductionSeries(prdRow: RowRecord | null, advRows: RowRecord[]) {
       avgDailyKmcf: toKmcf(avgDailyKm3),
     };
   });
+
+  // The source pads every well to a fixed 60-month window: production-volume
+  // columns are NULL once data runs out, but the average-daily columns store a
+  // literal 0. Those trailing filler months otherwise project onto future
+  // calendar dates (e.g. a single-month well charting out to 2031). Trim them
+  // back to the last month that carries real data so charts and the monthly
+  // table only show actual production.
+  let lastWithData = -1;
+  for (let index = points.length - 1; index >= 0; index -= 1) {
+    const point = points[index];
+    if (point.gasVolumeKm3 !== null || (point.avgDailyKm3 !== null && point.avgDailyKm3 !== 0)) {
+      lastWithData = index;
+      break;
+    }
+  }
+
+  return points.slice(0, lastWithData + 1);
 }
 
 function buildFiscalYearSeries(prdRow: RowRecord | null, advRows: RowRecord[]): FiscalYearPoint[] {

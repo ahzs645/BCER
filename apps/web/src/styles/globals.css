@@ -151,6 +151,16 @@
   box-shadow: 0 0 20px rgba(14, 165, 233, 0.15), 0 0 40px rgba(14, 165, 233, 0.08);
 }
 
+/* Scrollable wrappers around tables become keyboard-focusable, so browsers
+   paint a default focus outline (a blue ring) when a cell is clicked. Suppress
+   it on the table scroll containers without touching focus styles elsewhere. */
+[data-slot="table-container"]:focus,
+[data-slot="table-container"]:focus-visible,
+:where(div):has(> [data-slot="table-container"]):focus,
+:where(div):has(> [data-slot="table-container"]):focus-visible {
+  outline: none;
+}
+
 /* Strip MapLibre popup chrome so our React portal controls the look */
 .bcer-map-popup .maplibregl-popup-content {
   background: transparent;
