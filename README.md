@@ -37,6 +37,14 @@ npm run build
 npm test
 ```
 
+## Progressive Web App / offline
+
+The site is an installable PWA (via `vite-plugin-pwa`). The app shell is
+precached and the static data JSON is runtime-cached on demand, so wells,
+searches, operators, and area/formation profiles you have visited remain
+available offline. The map basemap is served from a remote tile provider, so
+only tiles you have already viewed are available without a connection.
+
 ## Static data
 
 The production site is deployed as static assets. JSON data is generated from SQLite during `npm run build:static`, copied into the Vite build, and compressed before GitHub Pages upload.

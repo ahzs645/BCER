@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Printer } from "lucide-react";
+import { ArrowLeft, MapPin, Printer } from "lucide-react";
 import { DataTable } from "@/components/DataTable";
 import { ProductionCharts } from "@/components/ProductionCharts";
 import { WellAnalytics } from "@/components/WellAnalytics";
@@ -382,6 +382,8 @@ export function WellDetailPage() {
     );
   }
 
+  const hasCoordinates = detail.overview.surfLat !== null && detail.overview.surfLon !== null;
+
   const overviewRows = [{
     wa_num: detail.overview.waNum, well_name: detail.overview.wellName,
     operator: detail.overview.operator, operator_id: detail.overview.operatorId,
@@ -445,10 +447,20 @@ export function WellDetailPage() {
         <Button variant="ghost" size="sm" asChild className="text-primary">
           <Link to="/search"><ArrowLeft className="mr-1.5 h-3.5 w-3.5" />Back to search</Link>
         </Button>
-        <Button variant="outline" size="sm" onClick={() => window.print()} className="gap-1.5">
-          <Printer className="h-3.5 w-3.5" />
-          Print
-        </Button>
+        <div className="flex items-center gap-2">
+          {hasCoordinates && (
+            <Button variant="outline" size="sm" asChild className="gap-1.5">
+              <Link to={`/map?well=${detail.overview.waNum}`}>
+                <MapPin className="h-3.5 w-3.5" />
+                View on map
+              </Link>
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={() => window.print()} className="gap-1.5">
+            <Printer className="h-3.5 w-3.5" />
+            Print
+          </Button>
+        </div>
       </div>
 
       {/* Hero */}
@@ -486,7 +498,11 @@ export function WellDetailPage() {
         <StatCard label="Spud month" value={formatMonthCode(detail.overview.spudMon)} />
         <StatCard label="Rig release" value={formatMonthCode(detail.overview.rigRelMon)} />
         <StatCard label="First production" value={formatMonthCode(detail.overview.firstProdMon)} />
-        <StatCard label="Surface location" value={formatLatLon(detail.overview.surfLat, detail.overview.surfLon)} />
+        <StatCard
+          label="Surface location"
+          value={formatLatLon(detail.overview.surfLat, detail.overview.surfLon)}
+          to={hasCoordinates ? `/map?well=${detail.overview.waNum}` : undefined}
+        />
         <StatCard label="Measured depth" value={formatNumber(detail.overview.totalMDepth, 2)} />
         <StatCard label="TV depth" value={formatNumber(detail.overview.maxTvDepth, 2)} />
         <StatCard label="Fracs reported" value={formatNumber(numFracsReported, 0)} />

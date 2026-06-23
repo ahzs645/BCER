@@ -12,7 +12,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Activity, Beaker, CheckCircle2, Clock, Gauge, Layers, Search, TrendingDown } from "lucide-react";
+import { Activity, Beaker, CheckCircle2, Clock, Gauge, Layers, TrendingDown } from "lucide-react";
 import type { GasAnalysisRow, ProductionExplorerData, WellDetail, WellSearchResult } from "@/types";
 import { useChartTheme } from "@/lib/chart-theme";
 import { formatDateCode, formatMonthCode, formatNumber } from "@/lib/format";
@@ -441,12 +441,16 @@ export function WellAnalytics({
             <div className="mt-3 flex flex-wrap gap-2">
               {detail.overview.areaDesc && (
                 <Button asChild variant="outline" size="sm" className="h-8 text-xs">
-                  <Link to={searchUrl("area", detail.overview.areaDesc)}><Search className="mr-1 h-3 w-3" />Area wells</Link>
+                  <Link to={detail.overview.areaCode !== null ? `/areas/${detail.overview.areaCode}` : searchUrl("area", detail.overview.areaDesc)}>
+                    <Layers className="mr-1 h-3 w-3" />Area profile
+                  </Link>
                 </Button>
               )}
               {detail.overview.formDesc && (
                 <Button asChild variant="outline" size="sm" className="h-8 text-xs">
-                  <Link to={searchUrl("formation", detail.overview.formDesc)}><Search className="mr-1 h-3 w-3" />Formation wells</Link>
+                  <Link to={detail.overview.formCode !== null ? `/formations/${detail.overview.formCode}` : searchUrl("formation", detail.overview.formDesc)}>
+                    <Layers className="mr-1 h-3 w-3" />Formation profile
+                  </Link>
                 </Button>
               )}
             </div>

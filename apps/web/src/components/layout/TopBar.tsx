@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Moon, Sun, WifiOff } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
+import { useTheme } from "@/lib/theme";
+import { useOnlineStatus } from "@/hooks/use-online-status";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -37,6 +39,14 @@ function useBreadcrumbs() {
     return [{ label: "Dashboard", href: "/" }, { label: "About" }];
   }
 
+  if (/^\/areas\/\d+/.test(path)) {
+    return [{ label: "Dashboard", href: "/" }, { label: "Area profile" }];
+  }
+
+  if (/^\/formations\/\d+/.test(path)) {
+    return [{ label: "Dashboard", href: "/" }, { label: "Formation profile" }];
+  }
+
   const wellMatch = path.match(/^\/wells\/(\d+)/);
   if (wellMatch) {
     return [
@@ -63,7 +73,7 @@ function WaLookup() {
   }
 
   return (
-    <form onSubmit={submit} className="flex items-center gap-1 sm:ml-auto">
+    <form onSubmit={submit} className="flex flex-1 items-center gap-1 sm:flex-none">
       <Input
         type="text"
         inputMode="numeric"
@@ -81,6 +91,34 @@ function WaLookup() {
         <ArrowRight className="h-4 w-4" />
       </button>
     </form>
+  );
+}
+
+function ThemeToggle() {
+  const { theme, toggle } = useTheme();
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-input bg-muted/40 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:h-8 sm:w-8"
+    >
+      {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+    </button>
+  );
+}
+
+function OfflineChip() {
+  const online = useOnlineStatus();
+  if (online) return null;
+  return (
+    <span
+      className="inline-flex h-8 items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 text-xs font-medium text-amber-600 dark:text-amber-400"
+      title="You are offline. Cached data is still available; the map basemap needs a connection."
+    >
+      <WifiOff className="h-3.5 w-3.5" />
+      Offline
+    </span>
   );
 }
 
@@ -116,7 +154,11 @@ export function TopBar() {
         </BreadcrumbList>
       </Breadcrumb>
       </div>
-      <WaLookup />
+      <div className="flex items-center gap-2 sm:ml-auto">
+        <OfflineChip />
+        <WaLookup />
+        <ThemeToggle />
+      </div>
     </header>
   );
 }

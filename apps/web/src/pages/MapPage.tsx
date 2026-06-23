@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { DataDrivenPropertyValueSpecification } from "maplibre-gl";
 import { Link, useSearchParams } from "react-router-dom";
-import { Filter, ExternalLink, Flame, Layers, MapPin, Database } from "lucide-react";
+import { Filter, ExternalLink, Flame, Layers, MapPin, Database, Search, X } from "lucide-react";
 import { Map, MapClusterLayer, MapControls, MapPopup, type MapRef } from "@/components/ui/map";
 import { BC_CENTER, BC_DEFAULT_ZOOM } from "@/components/ui/map-styles";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,8 +10,51 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { fetchWellGeoJson } from "@/lib/api";
+import { fetchAllWells } from "@/lib/api";
+import { filterWells, generateGeoJson } from "@/lib/static-data";
 import { formatNumber } from "@/lib/format";
+import { useOnlineStatus } from "@/hooks/use-online-status";
+import type { WellSearchResult } from "@/types";
+
+// Query params shared with the Search page. Order here drives chip display order.
+const MAP_FILTER_LABELS: Record<string, string> = {
+  waNum: "WA #",
+  waNumFrom: "WA ≥",
+  waNumTo: "WA ≤",
+  wellName: "Name",
+  operator: "Operator",
+  uwi: "UWI",
+  area: "Area",
+  formation: "Formation",
+  spudFrom: "Spud ≥",
+  spudTo: "Spud ≤",
+  rigRelFrom: "Rig rel ≥",
+  rigRelTo: "Rig rel ≤",
+  firstProdFrom: "First prod ≥",
+  firstProdTo: "First prod ≤",
+  orientation: "Orientation",
+  latMin: "Lat ≥",
+  latMax: "Lat ≤",
+  lonMin: "Lon ≥",
+  lonMax: "Lon ≤",
+};
+
+function activeMapFilters(params: URLSearchParams): Array<{ key: string; label: string; value: string }> {
+  return Object.keys(MAP_FILTER_LABELS).flatMap((key) => {
+    const value = params.get(key);
+    if (!value || (key === "orientation" && value === "all")) return [];
+    return [{ key, label: MAP_FILTER_LABELS[key], value }];
+  });
+}
+
+function buildMapFilters(params: URLSearchParams): Record<string, string> {
+  const filters: Record<string, string> = {};
+  for (const key of Object.keys(MAP_FILTER_LABELS)) {
+    const value = params.get(key);
+    if (value && !(key === "orientation" && value === "all")) filters[key] = value;
+  }
+  return filters;
+}
 
 interface WellProperties {
   waNum: number;
@@ -426,7 +469,7 @@ function LayerLegend({ items }: { items: Array<{ label: string; color: string }>
 export function MapPage() {
   const mapRef = useRef<MapRef>(null);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [geoData, setGeoData] = useState<GeoJSON.FeatureCollection<GeoJSON.Point, WellProperties> | null>(null);
+  const [allWells, setAllWells] = useState<WellSearchResult[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedWell, setSelectedWell] = useState<{
@@ -441,33 +484,80 @@ export function MapPage() {
   });
   const [layerMode, setLayerMode] = useState<MapLayerMode>("production");
 
+  const online = useOnlineStatus();
   const selectedWa = searchParams.get("well");
+  const searchKey = searchParams.toString();
 
+  // Filters inherited from the Search page (everything except the `well` selection).
+  const queryFilters = useMemo(() => buildMapFilters(searchParams), [searchKey]);
+  const chips = useMemo(() => activeMapFilters(searchParams), [searchKey]);
+
+  // Grand total of mappable wells (those with coordinates), before any filtering.
+  const mappableTotal = useMemo(
+    () => (allWells ? allWells.reduce((n, w) => (w.surfLat !== null && w.surfLon !== null ? n + 1 : n), 0) : 0),
+    [allWells],
+  );
+
+  // Wells matching the inherited search filters, as GeoJSON.
+  const scopedGeo = useMemo(() => {
+    if (!allWells) return null;
+    return generateGeoJson(filterWells(allWells, queryFilters)) as GeoJSON.FeatureCollection<GeoJSON.Point, WellProperties>;
+  }, [allWells, queryFilters]);
+
+  // Then layer the map-only "data presence" toggles on top.
   const filteredData = useMemo(() => {
-    if (!geoData) return null;
-    return filterGeoData(geoData, filters);
-  }, [geoData, filters]);
+    if (!scopedGeo) return null;
+    return filterGeoData(scopedGeo, filters);
+  }, [scopedGeo, filters]);
+
   const paint = useMemo(() => layerPaint(layerMode), [layerMode]);
 
   useEffect(() => {
-    fetchWellGeoJson()
-      .then((data) => setGeoData(data as GeoJSON.FeatureCollection<GeoJSON.Point, WellProperties>))
+    fetchAllWells()
+      .then(setAllWells)
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load well data"))
       .finally(() => setLoading(false));
   }, []);
 
+  function removeFilter(key: string) {
+    const next = new URLSearchParams(searchParams);
+    next.delete(key);
+    setSearchParams(next, { replace: true });
+  }
+
+  function clearFilters() {
+    const next = new URLSearchParams();
+    const well = searchParams.get("well");
+    if (well) next.set("well", well);
+    setSearchParams(next, { replace: true });
+  }
+
   // Restore a well selection from the URL (?well=WA) on load or when the param
-  // changes externally, flying the map to the well and opening its popup.
+  // changes externally, flying the map to the well and opening its popup. Looks up
+  // the full well list so a deep-linked well opens even if filtered out of view.
   useEffect(() => {
-    if (!geoData || !selectedWa) return;
+    if (!allWells || !selectedWa) return;
     if (selectedWell && String(selectedWell.properties.waNum) === selectedWa) return;
     const wa = Number.parseInt(selectedWa, 10);
-    const feature = geoData.features.find((f) => f.properties.waNum === wa);
-    if (!feature) return;
-    const coordinates = feature.geometry.coordinates as [number, number];
-    setSelectedWell({ coordinates, properties: feature.properties });
+    const well = allWells.find((w) => w.waNum === wa);
+    if (!well || well.surfLat === null || well.surfLon === null) return;
+    const coordinates: [number, number] = [well.surfLon, well.surfLat];
+    setSelectedWell({
+      coordinates,
+      properties: {
+        waNum: well.waNum,
+        wellName: well.wellName,
+        operator: well.operator,
+        areaDesc: well.areaDesc,
+        formDesc: well.formDesc,
+        orientation: well.orientation,
+        gasProd3Yr: well.gasProd3Yr,
+        spudMon: well.spudMon,
+        firstProdMon: well.firstProdMon,
+      },
+    });
     mapRef.current?.easeTo({ center: coordinates, zoom: Math.max(mapRef.current.getZoom(), 9) });
-  }, [geoData, selectedWa, selectedWell]);
+  }, [allWells, selectedWa, selectedWell]);
 
   function handlePointClick(
     feature: GeoJSON.Feature<GeoJSON.Point, WellProperties>,
@@ -507,16 +597,46 @@ export function MapPage() {
 
   return (
     <div className="flex min-h-[calc(100dvh-9rem)] flex-col gap-4 sm:min-h-[calc(100dvh-6rem)]">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold font-[family-name:var(--font-heading)] tracking-tight">Well Map</h2>
-          <p className="text-sm text-muted-foreground">
-            {filteredData?.features.length.toLocaleString() ?? "—"} wells
-            {geoData && filteredData && filteredData.features.length !== geoData.features.length && (
-              <span className="text-muted-foreground/60"> of {geoData.features.length.toLocaleString()}</span>
-            )}
-          </p>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold font-[family-name:var(--font-heading)] tracking-tight">Well Map</h2>
+            <p className="text-sm text-muted-foreground">
+              {filteredData?.features.length.toLocaleString() ?? "—"} wells
+              {filteredData && filteredData.features.length !== mappableTotal && (
+                <span className="text-muted-foreground/60"> of {mappableTotal.toLocaleString()}</span>
+              )}
+            </p>
+          </div>
         </div>
+        {chips.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <Search className="h-3 w-3" /> From search:
+            </span>
+            {chips.map((chip) => (
+              <Badge key={chip.key} variant="secondary" className="gap-1 pr-1 text-xs font-normal">
+                <span className="text-muted-foreground">{chip.label}</span> {chip.value}
+                <button
+                  type="button"
+                  onClick={() => removeFilter(chip.key)}
+                  aria-label={`Remove ${chip.label} filter`}
+                  className="ml-0.5 rounded-sm text-muted-foreground/70 transition-colors hover:text-foreground"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            ))}
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="h-6 px-2 text-xs text-muted-foreground">
+              Clear
+            </Button>
+          </div>
+        )}
+        {!online && (
+          <p className="text-xs text-amber-600 dark:text-amber-400">
+            You're offline — well markers use cached data, but the map basemap may not load until you reconnect.
+          </p>
+        )}
       </div>
 
       <Card className="h-[calc(100dvh-13rem)] min-h-[520px] flex-1 overflow-hidden border-border/50 bg-card/80 py-0 backdrop-blur-sm">
@@ -533,7 +653,7 @@ export function MapPage() {
               onChange={setFilters}
               layerMode={layerMode}
               onLayerModeChange={setLayerMode}
-              totalCount={geoData?.features.length ?? 0}
+              totalCount={scopedGeo?.features.length ?? 0}
               filteredCount={filteredData?.features.length ?? 0}
             />
             <LayerLegend items={paint.legend} />

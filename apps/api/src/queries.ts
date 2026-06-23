@@ -2,8 +2,13 @@ import type { DatabaseSync } from "node:sqlite";
 import type {
   ActivityLocationRow,
   AggregateProductionData,
+  AggregateProductionPoint,
   CalendarYearPoint,
   DashboardData,
+  DimensionDetailData,
+  DimensionIndexData,
+  DimensionKind,
+  DimensionSummary,
   FiscalYearPoint,
   GasAnalysisRow,
   OperatorAnalyticsData,
@@ -783,15 +788,15 @@ export function getDashboardData(db: DatabaseSync): DashboardData {
 
   const topAreas = queryRows(
     db,
-    "SELECT area_desc, COUNT(*) AS count FROM well_search WHERE area_desc IS NOT NULL GROUP BY area_desc ORDER BY count DESC LIMIT 10",
+    "SELECT area_code, area_desc, COUNT(*) AS count FROM well_search WHERE area_desc IS NOT NULL GROUP BY area_code, area_desc ORDER BY count DESC LIMIT 10",
     {},
-  ).map((row) => ({ areaDesc: String(row.area_desc), count: toNumber(row.count) ?? 0 }));
+  ).map((row) => ({ areaCode: toNumber(row.area_code), areaDesc: String(row.area_desc), count: toNumber(row.count) ?? 0 }));
 
   const topFormations = queryRows(
     db,
-    "SELECT form_desc, COUNT(*) AS count FROM well_search WHERE form_desc IS NOT NULL GROUP BY form_desc ORDER BY count DESC LIMIT 10",
+    "SELECT form_code, form_desc, COUNT(*) AS count FROM well_search WHERE form_desc IS NOT NULL GROUP BY form_code, form_desc ORDER BY count DESC LIMIT 10",
     {},
-  ).map((row) => ({ formDesc: String(row.form_desc), count: toNumber(row.count) ?? 0 }));
+  ).map((row) => ({ formCode: toNumber(row.form_code), formDesc: String(row.form_desc), count: toNumber(row.count) ?? 0 }));
 
   const orientationBreakdown = queryRows(
     db,
@@ -1034,6 +1039,194 @@ export function getOperatorDetail(db: DatabaseSync, operatorId: number): Operato
   ).map((r) => ({ orientation: String(r.orientation), count: toNumber(r.count) ?? 0 }));
 
   return { summary, wells, areaBreakdown, formationBreakdown, orientationBreakdown };
+}
+
+// ---- Area / Formation profiles ----
+
+interface DimensionConfig {
+  /** well_search column holding the numeric code (area_code | form_code). */
+  codeCol: string;
+  /** well_search column holding the description (area_desc | form_desc). */
+  descCol: string;
+  /** The opposing dimension's description column (form_desc for an area, etc.). */
+  crossCol: string;
+}
+
+const AREA_CONFIG: DimensionConfig = { codeCol: "area_code", descCol: "area_desc", crossCol: "form_desc" };
+const FORMATION_CONFIG: DimensionConfig = { codeCol: "form_code", descCol: "form_desc", crossCol: "area_desc" };
+
+function mapDimensionSummary(row: RowRecord): DimensionSummary {
+  return {
+    code: toNumber(row.code) ?? 0,
+    desc: toStringValue(row.dim_desc) ?? String(toNumber(row.code) ?? ""),
+    wellCount: toNumber(row.well_count) ?? 0,
+    horizontalCount: toNumber(row.horizontal_count) ?? 0,
+    verticalCount: toNumber(row.vertical_count) ?? 0,
+    totalGas3Yr: toNumber(row.total_gas_3yr) ?? 0,
+    totalGas5Yr: toNumber(row.total_gas_5yr) ?? 0,
+    operatorCount: toNumber(row.operator_count) ?? 0,
+    topOperator: toStringValue(row.top_operator),
+    topCross: toStringValue(row.top_cross),
+  };
+}
+
+function getDimensionFiscalProduction(
+  db: DatabaseSync,
+  cfg: DimensionConfig,
+  code: number,
+): AggregateProductionPoint[] {
+  const sampleRow = queryRow(db, "SELECT * FROM prd_profile_gas LIMIT 1", {});
+  const fyeColumns = sampleRow
+    ? Object.keys(sampleRow).filter((k) => /^prd_fye\d{4}$/.test(k)).sort()
+    : [];
+  if (fyeColumns.length === 0) {
+    return [];
+  }
+
+  const fyeSumCols = fyeColumns.map((c) => `COALESCE(SUM(p.${c}), 0) AS ${c}`).join(", ");
+  const row = queryRow(
+    db,
+    `SELECT ${fyeSumCols}
+     FROM prd_profile_gas p
+     JOIN well_search w ON w.wa_num = p.wa_num
+     WHERE w.${cfg.codeCol} = :code`,
+    { code },
+  );
+  if (!row) {
+    return [];
+  }
+
+  return fyeColumns.map((col) => {
+    const year = Number(col.match(/\d{4}/)![0]);
+    return { label: `${year - 1}/${String(year).slice(2)}`, value: toNumber(row[col]) ?? 0 };
+  });
+}
+
+function getDimensionDetail(
+  db: DatabaseSync,
+  kind: DimensionKind,
+  cfg: DimensionConfig,
+  code: number,
+): DimensionDetailData | null {
+  const summaryRow = queryRow(
+    db,
+    `SELECT
+       w.${cfg.codeCol} AS code,
+       (SELECT ${cfg.descCol} FROM well_search
+        WHERE ${cfg.codeCol} = :code AND ${cfg.descCol} IS NOT NULL LIMIT 1) AS dim_desc,
+       COUNT(*) AS well_count,
+       SUM(CASE WHEN UPPER(COALESCE(w.orientation, '')) = 'HZ' THEN 1 ELSE 0 END) AS horizontal_count,
+       SUM(CASE WHEN UPPER(COALESCE(w.orientation, '')) <> 'HZ' THEN 1 ELSE 0 END) AS vertical_count,
+       COALESCE(SUM(w.gas_prod_3yr), 0) AS total_gas_3yr,
+       COALESCE(SUM(w.gas_prod_5yr), 0) AS total_gas_5yr,
+       COUNT(DISTINCT w.operator_id) AS operator_count,
+       (SELECT operator FROM well_search
+        WHERE ${cfg.codeCol} = :code AND operator IS NOT NULL
+        GROUP BY operator_id, operator ORDER BY COUNT(*) DESC LIMIT 1) AS top_operator,
+       (SELECT ${cfg.crossCol} FROM well_search
+        WHERE ${cfg.codeCol} = :code AND ${cfg.crossCol} IS NOT NULL
+        GROUP BY ${cfg.crossCol} ORDER BY COUNT(*) DESC LIMIT 1) AS top_cross
+     FROM well_search w
+     WHERE w.${cfg.codeCol} = :code
+     GROUP BY w.${cfg.codeCol}`,
+    { code },
+  );
+
+  if (!summaryRow) {
+    return null;
+  }
+
+  const summary = mapDimensionSummary(summaryRow);
+
+  const wells = queryRows(
+    db,
+    `SELECT * FROM well_search WHERE ${cfg.codeCol} = :code ORDER BY gas_prod_3yr DESC`,
+    { code },
+  ).map(mapSearchResult);
+
+  const operatorBreakdown = queryRows(
+    db,
+    `SELECT operator, operator_id, COUNT(*) AS count, COALESCE(SUM(gas_prod_3yr), 0) AS total_gas_3yr
+     FROM well_search
+     WHERE ${cfg.codeCol} = :code AND operator IS NOT NULL
+     GROUP BY operator_id, operator ORDER BY count DESC LIMIT 10`,
+    { code },
+  ).map((r) => ({
+    operator: String(r.operator),
+    operatorId: toNumber(r.operator_id) ?? 0,
+    count: toNumber(r.count) ?? 0,
+    totalGas3Yr: toNumber(r.total_gas_3yr) ?? 0,
+  }));
+
+  const crossBreakdown = queryRows(
+    db,
+    `SELECT ${cfg.crossCol} AS dim_desc, COUNT(*) AS count
+     FROM well_search
+     WHERE ${cfg.codeCol} = :code AND ${cfg.crossCol} IS NOT NULL
+     GROUP BY ${cfg.crossCol} ORDER BY count DESC LIMIT 10`,
+    { code },
+  ).map((r) => ({ desc: String(r.dim_desc), count: toNumber(r.count) ?? 0 }));
+
+  const orientationBreakdown = queryRows(
+    db,
+    `SELECT
+       CASE WHEN UPPER(COALESCE(orientation, '')) = 'HZ' THEN 'Horizontal' ELSE 'Vertical' END AS orientation,
+       COUNT(*) AS count
+     FROM well_search
+     WHERE ${cfg.codeCol} = :code
+     GROUP BY 1 ORDER BY count DESC`,
+    { code },
+  ).map((r) => ({ orientation: String(r.orientation), count: toNumber(r.count) ?? 0 }));
+
+  return {
+    kind,
+    summary,
+    wells,
+    operatorBreakdown,
+    crossBreakdown,
+    orientationBreakdown,
+    fiscalYearProduction: getDimensionFiscalProduction(db, cfg, code),
+  };
+}
+
+function getDimensionIndex(db: DatabaseSync, kind: DimensionKind, cfg: DimensionConfig): DimensionIndexData {
+  const items = queryRows(
+    db,
+    `SELECT
+       w.${cfg.codeCol} AS code,
+       (SELECT ${cfg.descCol} FROM well_search
+        WHERE ${cfg.codeCol} = w.${cfg.codeCol} AND ${cfg.descCol} IS NOT NULL LIMIT 1) AS dim_desc,
+       COUNT(*) AS well_count,
+       COALESCE(SUM(w.gas_prod_3yr), 0) AS total_gas_3yr
+     FROM well_search w
+     WHERE w.${cfg.codeCol} IS NOT NULL
+     GROUP BY w.${cfg.codeCol}
+     ORDER BY well_count DESC`,
+    {},
+  ).map((r) => ({
+    code: toNumber(r.code) ?? 0,
+    desc: toStringValue(r.dim_desc) ?? String(toNumber(r.code) ?? ""),
+    wellCount: toNumber(r.well_count) ?? 0,
+    totalGas3Yr: toNumber(r.total_gas_3yr) ?? 0,
+  }));
+
+  return { kind, items };
+}
+
+export function getAreaDetail(db: DatabaseSync, areaCode: number): DimensionDetailData | null {
+  return getDimensionDetail(db, "area", AREA_CONFIG, areaCode);
+}
+
+export function getFormationDetail(db: DatabaseSync, formCode: number): DimensionDetailData | null {
+  return getDimensionDetail(db, "formation", FORMATION_CONFIG, formCode);
+}
+
+export function getAreaIndex(db: DatabaseSync): DimensionIndexData {
+  return getDimensionIndex(db, "area", AREA_CONFIG);
+}
+
+export function getFormationIndex(db: DatabaseSync): DimensionIndexData {
+  return getDimensionIndex(db, "formation", FORMATION_CONFIG);
 }
 
 export function getProductionExplorer(db: DatabaseSync): ProductionExplorerData {

@@ -1,10 +1,10 @@
 import { startTransition, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Download, Filter, X } from "lucide-react";
-import { fetchSourceMeta, fetchWellSearch } from "@/lib/api";
+import { Download, Filter, MapPin, X } from "lucide-react";
+import { fetchFilteredWells, fetchSourceMeta, fetchWellSearch } from "@/lib/api";
 import { downloadCsv } from "@/lib/export";
 import { formatLatLon, formatMonthCode, formatNumber } from "@/lib/format";
-import type { SearchResponse, SourceMeta } from "@/types";
+import type { SearchResponse, SourceMeta, WellSearchResult } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -132,6 +132,35 @@ function searchUrl(key: string, value: string | number | null | undefined) {
   return `/search?${params.toString()}`;
 }
 
+function areaHref(item: WellSearchResult) {
+  if (item.areaCode !== null) return `/areas/${item.areaCode}`;
+  return item.areaDesc ? searchUrl("area", item.areaDesc) : null;
+}
+
+function formationHref(item: WellSearchResult) {
+  if (item.formCode !== null) return `/formations/${item.formCode}`;
+  return item.formDesc ? searchUrl("formation", item.formDesc) : null;
+}
+
+function wellToCsvRow(item: WellSearchResult) {
+  return {
+    wa_num: item.waNum,
+    well_name: item.wellName,
+    operator: item.operator,
+    operator_id: item.operatorId,
+    area: item.areaDesc,
+    formation: item.formDesc,
+    spud_mon: item.spudMon,
+    rig_rel_mon: item.rigRelMon,
+    first_prod_mon: item.firstProdMon,
+    orientation: item.orientation,
+    surf_lat: item.surfLat,
+    surf_lon: item.surfLon,
+    gas_prod_3yr: item.gasProd3Yr,
+    gas_prod_5yr: item.gasProd5Yr,
+  };
+}
+
 export function SearchPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -140,6 +169,7 @@ export function SearchPage() {
   const [results, setResults] = useState<SearchResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [exportingAll, setExportingAll] = useState(false);
   // Collapse the filter panel by default on small screens so results aren't
   // pushed below a full screen of inputs.
   const [filtersOpen, setFiltersOpen] = useState(
@@ -220,23 +250,18 @@ export function SearchPage() {
 
   function exportResults() {
     if (!results || results.items.length === 0) return;
-    const rows = results.items.map((item) => ({
-      wa_num: item.waNum,
-      well_name: item.wellName,
-      operator: item.operator,
-      operator_id: item.operatorId,
-      area: item.areaDesc,
-      formation: item.formDesc,
-      spud_mon: item.spudMon,
-      rig_rel_mon: item.rigRelMon,
-      first_prod_mon: item.firstProdMon,
-      orientation: item.orientation,
-      surf_lat: item.surfLat,
-      surf_lon: item.surfLon,
-      gas_prod_3yr: item.gasProd3Yr,
-      gas_prod_5yr: item.gasProd5Yr,
-    }));
-    downloadCsv(`bcer-search-page-${results.page}.csv`, rows);
+    downloadCsv(`bcer-search-page-${results.page}.csv`, results.items.map(wellToCsvRow));
+  }
+
+  async function exportAllResults() {
+    if (!results || results.total === 0 || exportingAll) return;
+    setExportingAll(true);
+    try {
+      const all = await fetchFilteredWells(paramsToRequest(searchParams));
+      downloadCsv(`bcer-search-all-${all.length}.csv`, all.map(wellToCsvRow));
+    } finally {
+      setExportingAll(false);
+    }
   }
 
   return (
@@ -249,6 +274,14 @@ export function SearchPage() {
             {meta?.dataCurrentTo ? `Current to ${meta.dataCurrentTo}` : "Loading..."} · {results?.total ?? "—"} indexed wells
           </p>
         </div>
+        {results && results.total > 0 && (
+          <Button variant="outline" size="sm" asChild className="gap-1.5 self-start sm:self-auto">
+            <Link to={`/map${searchKey ? `?${searchKey}` : ""}`}>
+              <MapPin className="h-3.5 w-3.5" />
+              View {results.total.toLocaleString()} on map
+            </Link>
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-col gap-4 lg:flex-row">
@@ -363,17 +396,31 @@ export function SearchPage() {
               <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
                 Results
               </CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {results && results.items.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={exportResults}
-                    className="h-7 gap-1.5 text-xs text-muted-foreground"
-                  >
-                    <Download className="h-3 w-3" />
-                    CSV
-                  </Button>
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={exportResults}
+                      className="h-7 gap-1.5 text-xs text-muted-foreground"
+                    >
+                      <Download className="h-3 w-3" />
+                      Page CSV
+                    </Button>
+                    {results.total > results.items.length && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={exportAllResults}
+                        disabled={exportingAll}
+                        className="h-7 gap-1.5 text-xs text-muted-foreground"
+                      >
+                        <Download className="h-3 w-3" />
+                        {exportingAll ? "Preparing…" : `All ${results.total.toLocaleString()} CSV`}
+                      </Button>
+                    )}
+                  </>
                 )}
                 <Badge variant="secondary" className="text-xs">
                   {resultWindowLabel(results)}
@@ -433,8 +480,8 @@ export function SearchPage() {
                         <div>
                           <dt className="text-xs text-muted-foreground">Area / Formation</dt>
                           <dd className="break-words font-medium [overflow-wrap:anywhere]">
-                            {item.areaDesc ? <Link to={searchUrl("area", item.areaDesc)} className="text-primary hover:underline">{item.areaDesc}</Link> : "—"} /{" "}
-                            {item.formDesc ? <Link to={searchUrl("formation", item.formDesc)} className="text-primary hover:underline">{item.formDesc}</Link> : "—"}
+                            {item.areaDesc ? <Link to={areaHref(item) ?? "/search"} className="text-primary hover:underline">{item.areaDesc}</Link> : "—"} /{" "}
+                            {item.formDesc ? <Link to={formationHref(item) ?? "/search"} className="text-primary hover:underline">{item.formDesc}</Link> : "—"}
                           </dd>
                         </div>
                         <div>
@@ -495,10 +542,10 @@ export function SearchPage() {
                           </TableCell>
                           <TableCell className="py-2">
                             <div className="text-sm font-medium">
-                              {item.areaDesc ? <Link to={searchUrl("area", item.areaDesc)} className="text-primary hover:underline">{item.areaDesc}</Link> : "—"}
+                              {item.areaDesc ? <Link to={areaHref(item) ?? "/search"} className="text-primary hover:underline">{item.areaDesc}</Link> : "—"}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {item.formDesc ? <Link to={searchUrl("formation", item.formDesc)} className="text-primary hover:underline">{item.formDesc}</Link> : "—"}
+                              {item.formDesc ? <Link to={formationHref(item) ?? "/search"} className="text-primary hover:underline">{item.formDesc}</Link> : "—"}
                             </div>
                           </TableCell>
                           <TableCell className="py-2">
@@ -511,7 +558,15 @@ export function SearchPage() {
                               {item.orientation ?? "VERT"}
                             </Badge>
                           </TableCell>
-                          <TableCell className="py-2 text-xs font-mono">{formatLatLon(item.surfLat, item.surfLon)}</TableCell>
+                          <TableCell className="py-2 text-xs font-mono">
+                            {item.surfLat !== null && item.surfLon !== null ? (
+                              <Link to={`/map?well=${item.waNum}`} className="text-primary hover:underline">
+                                {formatLatLon(item.surfLat, item.surfLon)}
+                              </Link>
+                            ) : (
+                              formatLatLon(item.surfLat, item.surfLon)
+                            )}
+                          </TableCell>
                           <TableCell className="py-2 text-right text-sm font-mono">{formatNumber(item.gasProd3Yr, 1)}</TableCell>
                           <TableCell className="py-2 text-right text-sm font-mono">{formatNumber(item.gasProd5Yr, 1)}</TableCell>
                         </TableRow>
