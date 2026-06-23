@@ -1,7 +1,8 @@
 # BCER Data Viewer — Improvement Plan
 
-Status: **proposal / pre-implementation**. No app code changed yet.
-Branch: `claude/dreamy-tesla-9yk4g8`.
+Status: **implemented** on branch `claude/dreamy-tesla-9yk4g8` (all four
+workstreams). This document is retained as the design record; see the commit
+history for the delivered changes.
 
 Four workstreams, selected with the user:
 

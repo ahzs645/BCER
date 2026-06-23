@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { fetchAllWells } from "@/lib/api";
 import { filterWells, generateGeoJson } from "@/lib/static-data";
 import { formatNumber } from "@/lib/format";
+import { useOnlineStatus } from "@/hooks/use-online-status";
 import type { WellSearchResult } from "@/types";
 
 // Query params shared with the Search page. Order here drives chip display order.
@@ -483,6 +484,7 @@ export function MapPage() {
   });
   const [layerMode, setLayerMode] = useState<MapLayerMode>("production");
 
+  const online = useOnlineStatus();
   const selectedWa = searchParams.get("well");
   const searchKey = searchParams.toString();
 
@@ -629,6 +631,11 @@ export function MapPage() {
               Clear
             </Button>
           </div>
+        )}
+        {!online && (
+          <p className="text-xs text-amber-600 dark:text-amber-400">
+            You're offline — well markers use cached data, but the map basemap may not load until you reconnect.
+          </p>
         )}
       </div>
 

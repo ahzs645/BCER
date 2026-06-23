@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Moon, Sun } from "lucide-react";
+import { ArrowRight, Moon, Sun, WifiOff } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { useTheme } from "@/lib/theme";
+import { useOnlineStatus } from "@/hooks/use-online-status";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -107,6 +108,20 @@ function ThemeToggle() {
   );
 }
 
+function OfflineChip() {
+  const online = useOnlineStatus();
+  if (online) return null;
+  return (
+    <span
+      className="inline-flex h-8 items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 text-xs font-medium text-amber-600 dark:text-amber-400"
+      title="You are offline. Cached data is still available; the map basemap needs a connection."
+    >
+      <WifiOff className="h-3.5 w-3.5" />
+      Offline
+    </span>
+  );
+}
+
 export function TopBar() {
   const crumbs = useBreadcrumbs();
 
@@ -140,6 +155,7 @@ export function TopBar() {
       </Breadcrumb>
       </div>
       <div className="flex items-center gap-2 sm:ml-auto">
+        <OfflineChip />
         <WaLookup />
         <ThemeToggle />
       </div>
