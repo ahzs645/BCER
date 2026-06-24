@@ -10,6 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { fetchAllWells } from "@/lib/api";
 import { filterWells, generateGeoJson } from "@/lib/static-data";
 import { formatNumber } from "@/lib/format";
@@ -240,18 +247,18 @@ function FilterPanel({
             <div className="space-y-2.5">
               <div className="space-y-1">
                 <Label htmlFor="map-layer-mode" className="text-xs text-muted-foreground">Map layer</Label>
-                <select
-                  id="map-layer-mode"
-                  value={layerMode}
-                  onChange={(event) => onLayerModeChange(event.target.value as MapLayerMode)}
-                  className="h-8 w-full rounded-md border border-input bg-muted/50 px-2 text-xs"
-                >
-                  <option value="production">3yr gas production</option>
-                  <option value="operator">Operator groups</option>
-                  <option value="formation">Formation groups</option>
-                  <option value="firstProd">First production year</option>
-                  <option value="orientation">Horizontal / vertical</option>
-                </select>
+                <Select value={layerMode} onValueChange={(value) => onLayerModeChange(value as MapLayerMode)}>
+                  <SelectTrigger id="map-layer-mode" size="sm" className="text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="production">3yr gas production</SelectItem>
+                    <SelectItem value="operator">Operator groups</SelectItem>
+                    <SelectItem value="formation">Formation groups</SelectItem>
+                    <SelectItem value="firstProd">First production year</SelectItem>
+                    <SelectItem value="orientation">Horizontal / vertical</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="flex items-center justify-between gap-3">

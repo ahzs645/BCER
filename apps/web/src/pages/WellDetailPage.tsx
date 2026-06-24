@@ -14,6 +14,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type {
   FiscalYearPoint,
   GasAnalysisRow,
@@ -185,16 +192,16 @@ function BlockSelector({ label, rowCount, value, onChange, includeLast = false }
   return (
     <div className="flex items-center gap-2">
       <Label htmlFor={id} className="text-xs text-muted-foreground">{label}</Label>
-      <select
-        id={id}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-10 rounded-md border border-input bg-muted/50 px-2 text-xs sm:h-7"
-      >
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
-        ))}
-      </select>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger id={id} size="sm" className="h-10 w-auto text-xs sm:h-7">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }
@@ -518,16 +525,16 @@ export function WellDetailPage() {
             </div>
             <div className="flex items-center gap-2">
               <Label htmlFor="well-gas-unit" className="text-xs text-muted-foreground">Gas units</Label>
-              <select
-                id="well-gas-unit"
-                value={unit}
-                onChange={(e) => setUnit(e.target.value as GasUnitOption)}
-                className="h-10 rounded-md border border-input bg-muted/50 px-2 text-xs sm:h-7"
-              >
-                <option value="km3">000 m3</option>
-                <option value="mcf">MCF</option>
-                <option value="kmcf">000 MCF</option>
-              </select>
+              <Select value={unit} onValueChange={(value) => setUnit(value as GasUnitOption)}>
+                <SelectTrigger id="well-gas-unit" size="sm" className="h-10 w-auto text-xs sm:h-7">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="km3">000 m3</SelectItem>
+                  <SelectItem value="mcf">MCF</SelectItem>
+                  <SelectItem value="kmcf">000 MCF</SelectItem>
+                </SelectContent>
+              </Select>
               <span className="text-xs text-muted-foreground">Liquids in {liquids}</span>
             </div>
           </div>
@@ -538,16 +545,16 @@ export function WellDetailPage() {
               <Label htmlFor="well-detail-section" className="mb-1 block text-xs text-muted-foreground">
                 Section
               </Label>
-              <select
-                id="well-detail-section"
-                value={activeTab}
-                onChange={(event) => setActiveTab(event.target.value as typeof activeTab)}
-                className="h-10 w-full rounded-md border border-input bg-muted/50 px-3 text-sm"
-              >
-                {detailTabs.map((tab) => (
-                  <option key={tab.value} value={tab.value}>{tab.label}</option>
-                ))}
-              </select>
+              <Select value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
+                <SelectTrigger id="well-detail-section" className="h-10 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {detailTabs.map((tab) => (
+                    <SelectItem key={tab.value} value={tab.value}>{tab.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <TabsList className="mb-4 hidden h-auto w-full justify-start gap-1 overflow-x-auto bg-muted/30 p-1 md:inline-flex [&>button]:flex-none [&>button]:py-1.5">
               {detailTabs.map((tab) => (
