@@ -161,6 +161,19 @@
   outline: none;
 }
 
+/* Recharts marks its wrapper/surface focusable for its accessibility layer, so
+   browsers paint a blue focus ring around a chart when you click it. Suppress
+   the outline on the chart wrapper, surface, and any focusable chart geometry
+   (bars, dots, sectors) so clicking a graph doesn't flash a box around it. */
+.recharts-wrapper:focus,
+.recharts-wrapper:focus-visible,
+.recharts-surface:focus,
+.recharts-surface:focus-visible,
+.recharts-wrapper *:focus,
+.recharts-wrapper *:focus-visible {
+  outline: none;
+}
+
 /* Strip MapLibre popup chrome so our React portal controls the look */
 .bcer-map-popup .maplibregl-popup-content {
   background: transparent;

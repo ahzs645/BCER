@@ -13,6 +13,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface DataTableProps {
   rows: Array<Record<string, string | number | null>>;
@@ -110,23 +117,27 @@ export function DataTable({ rows, emptyMessage = "No rows available.", labels, e
       <div className="flex justify-end md:hidden">
         <label className="flex items-center gap-2 text-xs text-muted-foreground">
           Sort
-          <select
+          <Select
             value={`${sort.key}:${sort.direction}`}
-            onChange={(event) => {
-              const [key, direction] = event.target.value.split(":") as [string, "asc" | "desc"];
+            onValueChange={(value) => {
+              const [key, direction] = value.split(":") as [string, "asc" | "desc"];
               setSort({ key, direction });
             }}
-            className="h-8 rounded-md border border-input bg-muted/50 px-2 text-xs text-foreground"
           >
-            {columns.flatMap((column) => [
-              <option key={`${column}:asc`} value={`${column}:asc`}>
-                {headerFor(column)} ↑
-              </option>,
-              <option key={`${column}:desc`} value={`${column}:desc`}>
-                {headerFor(column)} ↓
-              </option>,
-            ])}
-          </select>
+            <SelectTrigger size="sm" className="h-8 w-auto text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {columns.flatMap((column) => [
+                <SelectItem key={`${column}:asc`} value={`${column}:asc`}>
+                  {headerFor(column)} ↑
+                </SelectItem>,
+                <SelectItem key={`${column}:desc`} value={`${column}:desc`}>
+                  {headerFor(column)} ↓
+                </SelectItem>,
+              ])}
+            </SelectContent>
+          </Select>
         </label>
       </div>
 

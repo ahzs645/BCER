@@ -10,6 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { MonthPicker } from "@/components/ui/month-picker";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -86,8 +94,8 @@ const filterGroups = [
   {
     label: "Dates",
     fields: [
-      ["spudFrom", "Spud From (YYYYMM)"],
-      ["spudTo", "Spud To (YYYYMM)"],
+      ["spudFrom", "Spud From"],
+      ["spudTo", "Spud To"],
       ["rigRelFrom", "Rig Release From"],
       ["rigRelTo", "Rig Release To"],
       ["firstProdFrom", "First Prod From"],
@@ -95,6 +103,16 @@ const filterGroups = [
     ],
   },
 ] as const;
+
+/** Date fields are stored as YYYYMM codes and edited via the month picker. */
+const DATE_FIELDS = new Set([
+  "spudFrom",
+  "spudTo",
+  "rigRelFrom",
+  "rigRelTo",
+  "firstProdFrom",
+  "firstProdTo",
+]);
 
 function paramsToState(searchParams: URLSearchParams) {
   return {
@@ -317,13 +335,21 @@ export function SearchPage() {
                         {group.fields.map(([name, label]) => (
                           <div key={name} className="space-y-1">
                             <Label htmlFor={`search-${name}`} className="text-xs text-muted-foreground">{label}</Label>
-                            <Input
-                              id={`search-${name}`}
-                              name={name}
-                              value={filters[name as keyof typeof filters]}
-                              onChange={(e) => updateField(name, e.target.value)}
-                              className="h-8 bg-muted/50 text-sm"
-                            />
+                            {DATE_FIELDS.has(name) ? (
+                              <MonthPicker
+                                id={`search-${name}`}
+                                value={filters[name as keyof typeof filters]}
+                                onChange={(value) => updateField(name, value)}
+                              />
+                            ) : (
+                              <Input
+                                id={`search-${name}`}
+                                name={name}
+                                value={filters[name as keyof typeof filters]}
+                                onChange={(e) => updateField(name, e.target.value)}
+                                className="h-8 bg-muted/50 text-sm"
+                              />
+                            )}
                           </div>
                         ))}
                       </div>
@@ -334,43 +360,43 @@ export function SearchPage() {
                   <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1">
                       <Label htmlFor="search-orientation" className="text-xs text-muted-foreground">Orientation</Label>
-                      <select
-                        id="search-orientation"
-                        value={filters.orientation}
-                        onChange={(e) => updateField("orientation", e.target.value)}
-                        className="h-8 w-full rounded-md border border-input bg-muted/50 px-2 text-sm"
-                      >
-                        <option value="all">All</option>
-                        <option value="horizontal">Horizontal</option>
-                        <option value="vertical">Vertical</option>
-                      </select>
+                      <Select value={filters.orientation} onValueChange={(value) => updateField("orientation", value)}>
+                        <SelectTrigger id="search-orientation" size="sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="horizontal">Horizontal</SelectItem>
+                          <SelectItem value="vertical">Vertical</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-1">
                       <Label htmlFor="search-sort" className="text-xs text-muted-foreground">Sort</Label>
-                      <select
-                        id="search-sort"
-                        value={filters.sort}
-                        onChange={(e) => updateField("sort", e.target.value)}
-                        className="h-8 w-full rounded-md border border-input bg-muted/50 px-2 text-sm"
-                      >
-                        <option value="high3YrProd">3yr gas (000 m3)</option>
-                        <option value="high5YrProd">5yr gas (000 m3)</option>
-                        <option value="highestWa">Highest WA</option>
-                        <option value="lowestWa">Lowest WA</option>
-                      </select>
+                      <Select value={filters.sort} onValueChange={(value) => updateField("sort", value)}>
+                        <SelectTrigger id="search-sort" size="sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="high3YrProd">3yr gas (000 m3)</SelectItem>
+                          <SelectItem value="high5YrProd">5yr gas (000 m3)</SelectItem>
+                          <SelectItem value="highestWa">Highest WA</SelectItem>
+                          <SelectItem value="lowestWa">Lowest WA</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-1">
                       <Label htmlFor="search-page-size" className="text-xs text-muted-foreground">Per page</Label>
-                      <select
-                        id="search-page-size"
-                        value={filters.pageSize}
-                        onChange={(e) => updateField("pageSize", e.target.value)}
-                        className="h-8 w-full rounded-md border border-input bg-muted/50 px-2 text-sm"
-                      >
-                        <option value="25">25</option>
-                        <option value="50">50</option>
-                        <option value="100">100</option>
-                      </select>
+                      <Select value={filters.pageSize} onValueChange={(value) => updateField("pageSize", value)}>
+                        <SelectTrigger id="search-page-size" size="sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="25">25</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
